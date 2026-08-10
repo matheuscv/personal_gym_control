@@ -3,7 +3,7 @@
 > Documento vivo de acompanhamento. Cada fase é atualizada (checkbox marcado + nota de data) conforme o desenvolvimento avança. Referência completa da proposta: `Proposta_Implementação.html`.
 
 **Início:** 10/08/2026
-**Status geral:** 🟢 Fase 0 concluída — iniciando Fase 1
+**Status geral:** 🟢 Fase 0 concluída — Fase 1 em andamento
 
 ---
 
@@ -36,7 +36,7 @@
 
 ## Fase 1 — Seção Treino
 
-- [ ] Migrations: `exercises`, `workout_plans`, `workout_plan_exercises`, `workout_sessions`, `workout_session_sets` (+ políticas RLS)
+- [x] Migrations: `exercises`, `workout_plans`, `workout_plan_exercises`, `workout_sessions`, `workout_session_sets` (+ políticas RLS)
 - [ ] Tela de login/cadastro (Supabase Auth)
 - [ ] Tela diária de treino (baseada no HTML 1), dados dinâmicos via Supabase
 - [ ] Registro de séries (peso/tempo, concluído) persistido por sessão
@@ -80,6 +80,7 @@ Estas ações precisam de login/credenciais suas e não posso executar sozinho n
 
 ## Changelog
 
+- **10/08/2026** — Migration `workout_schema` (exercises, workout_plans, workout_plan_exercises, workout_sessions, workout_session_sets + RLS) criada e aplicada no banco remoto via `supabase db push`. Chaves primárias `bigint identity`, `owner_id` denormalizado em todas as tabelas para RLS performático (sem joins), índices em todas as FKs.
 - **10/08/2026** — Decisão: env vars de Preview no Vercel ficam adiadas para quando a 1ª branch da Fase 1 for criada (associação direta branch → env var). **Fase 0 100% concluída** (dado esse adiamento deliberado).
 - **10/08/2026** — `supabase link` concluído (login via token pessoal, project-ref vinculado, histórico de migrations sincronizado via `migration repair`).
 - **10/08/2026** — Projeto criado, Fase 0 iniciada (scaffold local completo).
