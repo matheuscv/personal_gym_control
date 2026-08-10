@@ -28,9 +28,9 @@
 - [x] Git local inicializado + primeiro commit
 - [x] Repositório remoto no GitHub criado e conectado (`github.com/matheuscv/personal_gym_control`)
 - [x] Projeto Supabase criado (dashboard) — URL e anon key recebidas e configuradas em `.env` local
-- [ ] `supabase link` (CLI) — pendente login (`npx supabase login`) *(baixa prioridade — migrations já são aplicadas via SQL Editor)*
+- [x] `supabase link` (CLI) — login via personal access token, `supabase link --project-ref qgyczvzdysvjlrgrffuz` e `migration repair` para sincronizar histórico da migration `profiles` aplicada manualmente
 - [x] Projeto Vercel criado/linkado (`vercel link`) — conectado ao GitHub (deploy automático a cada push)
-- [x] Variáveis de ambiente configuradas no Vercel (produção e development). Preview pendente — bug do CLI do Vercel na versão atual ao tentar configurar sem branch específica; resolver quando existirem branches/PRs ativos
+- [x] Variáveis de ambiente configuradas no Vercel (produção e development). Preview adiado deliberadamente — bug do CLI ao configurar sem branch específica; será resolvido junto com a criação da 1ª branch da Fase 1 (env var associada diretamente à branch)
 - [x] Migration SQL inicial escrita (`profiles` + trigger de auto-criação no signup)
 - [x] Migration aplicada no banco remoto (via SQL Editor do dashboard) — verificado via REST API (HTTP 200)
 
@@ -80,6 +80,8 @@ Estas ações precisam de login/credenciais suas e não posso executar sozinho n
 
 ## Changelog
 
+- **10/08/2026** — Decisão: env vars de Preview no Vercel ficam adiadas para quando a 1ª branch da Fase 1 for criada (associação direta branch → env var). **Fase 0 100% concluída** (dado esse adiamento deliberado).
+- **10/08/2026** — `supabase link` concluído (login via token pessoal, project-ref vinculado, histórico de migrations sincronizado via `migration repair`).
 - **10/08/2026** — Projeto criado, Fase 0 iniciada (scaffold local completo).
 - **10/08/2026** — Repositório remoto conectado e commit inicial enviado ao GitHub.
 - **10/08/2026** — Credenciais do Supabase recebidas, cliente configurado e migration inicial (`profiles`) escrita — falta aplicar no banco remoto.
