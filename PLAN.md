@@ -41,7 +41,7 @@
 - [x] Tela diária de treino (baseada no HTML 1), dados dinâmicos via Supabase
 - [x] Registro de séries (peso/tempo, concluído) persistido por sessão
 - [x] Tela Admin (web-only): CRUD manual de planos A/B/C
-- [ ] Tela Admin (web-only): importador de JSON de plano de treino + validação (Zod, `/api`)
+- [x] Tela Admin (web-only): importador de JSON de plano de treino + validação (Zod, `/api`)
 - [ ] Dashboard de evolução de treino (carga máxima por exercício ao longo do tempo)
 - [ ] Separação de bundle web vs android (rotas admin fora do build Android)
 
@@ -80,6 +80,7 @@ Estas ações precisam de login/credenciais suas e não posso executar sozinho n
 
 ## Changelog
 
+- **10/08/2026** — Importador de JSON de plano de treino (`/api/import-workout-plan`, Zod compartilhado com o frontend, upsert idempotente por nome). `api/` passou a ser type-checked. Lógica testada chamando o handler diretamente (sem `vercel dev`, que trava neste ambiente); teste E2E de rede pendente para após o próximo deploy. **Combinado com o usuário: deploy no Vercel só ao final da sessão, não a cada etapa** (o push automático já dispara deploy, então os commits ficam só locais até então).
 - **10/08/2026** — Tela Admin (CRUD de exercícios e planos A/B/C, com adicionar/reordenar/editar exercícios do plano). Migration de correção: troca de ordem via função de banco (`swap_plan_exercise_order`) para evitar conflito com a constraint unique durante o swap. Testada via agent-browser ponta a ponta; usuário de teste criado via Admin API do Supabase (rate limit de e-mail do signup normal foi atingido) e removido ao final.
 - **10/08/2026** — Tela diária de treino implementada (seleção de plano ativo, geração automática das séries-alvo, registro de reps/peso/tempo/concluída persistido no Supabase). TanStack Query conectado. Testada via agent-browser com dados seedados via SQL (fluxo completo, incluindo retomada de sessão sem duplicar), depois removidos.
 - **10/08/2026** — Tela de login/cadastro implementada (AuthProvider + LoginPage + ProtectedRoute), com validação Zod/react-hook-form. Testada via agent-browser (validação de formulário e cadastro real, com limpeza da conta de teste depois).
