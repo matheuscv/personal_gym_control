@@ -1,4 +1,5 @@
 import { useAuth } from '../features/auth/auth-context';
+import { DailyWorkoutPage } from '../features/workout/DailyWorkoutPage';
 
 export function HomePage() {
   const { user, signOut } = useAuth();
@@ -12,7 +13,7 @@ export function HomePage() {
         </button>
       </header>
       <h1>Treino do dia</h1>
-      <p>Em breve: tela diária de treino baseada no plano ativo.</p>
+      <DailyWorkoutPage />
     </section>
   );
 }

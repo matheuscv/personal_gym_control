@@ -1,0 +1,111 @@
+.daily-workout.empty {
+  padding: 40px 0;
+  text-align: center;
+  color: var(--text);
+}
+
+.workout-status {
+  color: var(--text);
+  padding: 12px 0;
+}
+
+.workout-error {
+  color: #d0374c;
+}
+
+.plan-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.plan-tabs button {
+  font: inherit;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.plan-tabs button.active {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-color: var(--accent-border);
+  font-weight: 600;
+}
+
+.exercise-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.exercise-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 20px;
+}
+
+.exercise-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.exercise-header h3 {
+  margin: 0;
+  font-size: 17px;
+  color: var(--text-h);
+}
+
+.muscle-group {
+  font-size: 12px;
+  color: var(--text);
+  background: var(--code-bg);
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.target-reps {
+  font-size: 13px;
+  color: var(--text);
+  margin: 4px 0 12px;
+}
+
+.sets-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.sets-table th {
+  font-size: 12px;
+  text-align: left;
+  color: var(--text);
+  font-weight: 500;
+  padding: 4px 8px;
+}
+
+.sets-table td {
+  padding: 4px 8px;
+}
+
+.sets-table tr.completed {
+  background: var(--accent-bg);
+}
+
+.sets-table input[type='number'] {
+  width: 64px;
+  font: inherit;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.sets-table input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+}
