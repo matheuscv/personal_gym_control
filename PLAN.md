@@ -38,8 +38,8 @@
 
 - [x] Migrations: `exercises`, `workout_plans`, `workout_plan_exercises`, `workout_sessions`, `workout_session_sets` (+ políticas RLS)
 - [x] Tela de login/cadastro (Supabase Auth)
-- [ ] Tela diária de treino (baseada no HTML 1), dados dinâmicos via Supabase
-- [ ] Registro de séries (peso/tempo, concluído) persistido por sessão
+- [x] Tela diária de treino (baseada no HTML 1), dados dinâmicos via Supabase
+- [x] Registro de séries (peso/tempo, concluído) persistido por sessão
 - [ ] Tela Admin (web-only): CRUD manual de planos A/B/C
 - [ ] Tela Admin (web-only): importador de JSON de plano de treino + validação (Zod, `/api`)
 - [ ] Dashboard de evolução de treino (carga máxima por exercício ao longo do tempo)
@@ -80,6 +80,7 @@ Estas ações precisam de login/credenciais suas e não posso executar sozinho n
 
 ## Changelog
 
+- **10/08/2026** — Tela diária de treino implementada (seleção de plano ativo, geração automática das séries-alvo, registro de reps/peso/tempo/concluída persistido no Supabase). TanStack Query conectado. Testada via agent-browser com dados seedados via SQL (fluxo completo, incluindo retomada de sessão sem duplicar), depois removidos.
 - **10/08/2026** — Tela de login/cadastro implementada (AuthProvider + LoginPage + ProtectedRoute), com validação Zod/react-hook-form. Testada via agent-browser (validação de formulário e cadastro real, com limpeza da conta de teste depois).
 - **10/08/2026** — Migration `workout_schema` (exercises, workout_plans, workout_plan_exercises, workout_sessions, workout_session_sets + RLS) criada e aplicada no banco remoto via `supabase db push`. Chaves primárias `bigint identity`, `owner_id` denormalizado em todas as tabelas para RLS performático (sem joins), índices em todas as FKs.
 - **10/08/2026** — Decisão: env vars de Preview no Vercel ficam adiadas para quando a 1ª branch da Fase 1 for criada (associação direta branch → env var). **Fase 0 100% concluída** (dado esse adiamento deliberado).
