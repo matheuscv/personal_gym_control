@@ -1,0 +1,81 @@
+# Plano de Execução — personal_gym_control
+
+> Documento vivo de acompanhamento. Cada fase é atualizada (checkbox marcado + nota de data) conforme o desenvolvimento avança. Referência completa da proposta: `Proposta_Implementação.html`.
+
+**Início:** 10/08/2026
+**Status geral:** 🟡 Fase 0 em andamento
+
+---
+
+## Decisões confirmadas (não reabrir sem necessidade)
+
+- Multi-usuário desde o início, cada usuário administra os próprios dados (RLS por `owner_id`).
+- Android distribuído via APK manual (sideload) — sem Google Play.
+- Hospedagem 100% Vercel (Hobby, free) — sem Render.
+- Sem API paga de IA — interação via chat direto com o Claude + importação de JSON nas telas admin.
+- Relatórios de composição corporal: sem upload/armazenamento de imagem no Supabase — só dados numéricos.
+- Stack: React + TypeScript + Vite, Node (Vercel Serverless Functions), Supabase (Postgres + Auth), Capacitor para Android.
+
+---
+
+## Fase 0 — Infraestrutura
+
+- [x] Scaffold do projeto (Vite + React + TS) em `personal_gym_control/`
+- [x] Estrutura de pastas (`src/`, `api/`, `supabase/migrations/`)
+- [x] Dependências base instaladas (`react-router-dom`, `@supabase/supabase-js`, `zod`, `react-hook-form`, `@tanstack/react-query`, `date-fns`)
+- [x] `.env.example`, `.gitignore` ajustado, `README.md`
+- [x] Função serverless placeholder (`api/health.ts`)
+- [ ] Git local inicializado + primeiro commit
+- [ ] Repositório remoto no GitHub criado e conectado *(depende de ação manual sua — ver seção "Pendências")*
+- [ ] Projeto Supabase criado (dashboard) + `supabase link` *(depende de ação manual sua)*
+- [ ] Projeto Vercel criado/linkado (`vercel link`) *(depende de ação manual sua)*
+- [ ] Variáveis de ambiente configuradas no Vercel (produção e preview)
+- [ ] Schema inicial (migration SQL: `profiles`) aplicado no Supabase
+
+## Fase 1 — Seção Treino
+
+- [ ] Migrations: `exercises`, `workout_plans`, `workout_plan_exercises`, `workout_sessions`, `workout_session_sets` (+ políticas RLS)
+- [ ] Tela de login/cadastro (Supabase Auth)
+- [ ] Tela diária de treino (baseada no HTML 1), dados dinâmicos via Supabase
+- [ ] Registro de séries (peso/tempo, concluído) persistido por sessão
+- [ ] Tela Admin (web-only): CRUD manual de planos A/B/C
+- [ ] Tela Admin (web-only): importador de JSON de plano de treino + validação (Zod, `/api`)
+- [ ] Dashboard de evolução de treino (carga máxima por exercício ao longo do tempo)
+- [ ] Separação de bundle web vs android (rotas admin fora do build Android)
+
+## Fase 2 — Seção Evolução Corporal
+
+- [ ] Migrations: `body_reports`, `body_metrics` (+ políticas RLS)
+- [ ] Tela Admin (web-only): novo relatório — formulário manual (~18 campos) espelhando o layout Fitdays
+- [ ] Tela Admin (web-only): importador de JSON de relatório (colado a partir da leitura feita no chat) + validação (Zod, `/api`)
+- [ ] Dashboard de evolução corporal (baseado no HTML 2): gráficos por índice, tabela histórica, KPIs
+- [ ] Dashboard consumido também no build Android (somente leitura)
+
+## Fase 3 — App Android (Capacitor)
+
+- [ ] `npx cap init` + `npx cap add android`
+- [ ] Build Android sem rotas/telas admin (variável `VITE_PLATFORM=android`)
+- [ ] Geração de APK local (Android Studio) e instalação/teste no celular
+- [ ] (Opcional) GitHub Actions para gerar APK automaticamente a cada release
+
+## Fase 4 — Multi-usuário e polimento
+
+- [ ] Fluxo de cadastro/convite de novos usuários
+- [ ] Revisão de segurança das políticas RLS (teste de isolamento entre usuários)
+- [ ] PWA (manifest + service worker) para instalar a versão web em desktop/iOS
+- [ ] Offline-first na tela de treino do dia (fila local, sincroniza ao voltar a conexão)
+- [ ] Monitoramento de erros (opcional, ex. Sentry free tier)
+
+---
+
+## Pendências que dependem de você
+
+Estas ações precisam de login/credenciais suas e não posso executar sozinho neste ambiente:
+
+1. **GitHub**: CLI `gh` não está instalado aqui. Ou (a) instale o [GitHub CLI](https://cli.github.com/) e rode `gh auth login`, ou (b) crie o repositório manualmente em github.com (`personal_gym_control`, privado) e me passe a URL remota para eu configurar o `git remote` e dar push.
+2. **Vercel**: CLI já instalado, mas sem login. Rode `vercel login` (abre o navegador) e me avise quando terminar — eu sigo com `vercel link` e configuração das env vars.
+3. **Supabase**: CLI disponível via `npx supabase`, mas sem projeto criado. Crie um projeto em [supabase.com/dashboard](https://supabase.com/dashboard) (free tier) e me passe a **Project URL** e a **anon key** (e a **service role key**, com cuidado — só vai para variável de ambiente do backend, nunca para o frontend).
+
+## Changelog
+
+- **10/08/2026** — Projeto criado, Fase 0 iniciada (scaffold local completo).
