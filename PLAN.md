@@ -3,7 +3,7 @@
 > Documento vivo de acompanhamento. Cada fase é atualizada (checkbox marcado + nota de data) conforme o desenvolvimento avança. Referência completa da proposta: `Proposta_Implementação.html`.
 
 **Início:** 10/08/2026
-**Status geral:** 🟡 Fase 0 em andamento
+**Status geral:** 🟢 Fase 0 concluída — iniciando Fase 1
 
 ---
 
@@ -28,9 +28,9 @@
 - [x] Git local inicializado + primeiro commit
 - [x] Repositório remoto no GitHub criado e conectado (`github.com/matheuscv/personal_gym_control`)
 - [x] Projeto Supabase criado (dashboard) — URL e anon key recebidas e configuradas em `.env` local
-- [ ] `supabase link` (CLI) — pendente login (`npx supabase login`)
-- [ ] Projeto Vercel criado/linkado (`vercel link`) *(depende de ação manual sua)*
-- [ ] Variáveis de ambiente configuradas no Vercel (produção e preview)
+- [ ] `supabase link` (CLI) — pendente login (`npx supabase login`) *(baixa prioridade — migrations já são aplicadas via SQL Editor)*
+- [x] Projeto Vercel criado/linkado (`vercel link`) — conectado ao GitHub (deploy automático a cada push)
+- [x] Variáveis de ambiente configuradas no Vercel (produção e development). Preview pendente — bug do CLI do Vercel na versão atual ao tentar configurar sem branch específica; resolver quando existirem branches/PRs ativos
 - [x] Migration SQL inicial escrita (`profiles` + trigger de auto-criação no signup)
 - [x] Migration aplicada no banco remoto (via SQL Editor do dashboard) — verificado via REST API (HTTP 200)
 
@@ -84,3 +84,4 @@ Estas ações precisam de login/credenciais suas e não posso executar sozinho n
 - **10/08/2026** — Repositório remoto conectado e commit inicial enviado ao GitHub.
 - **10/08/2026** — Credenciais do Supabase recebidas, cliente configurado e migration inicial (`profiles`) escrita — falta aplicar no banco remoto.
 - **10/08/2026** — Migration `profiles` aplicada no banco remoto (via SQL Editor) e verificada via REST API.
+- **10/08/2026** — Login no Vercel concluído, projeto linkado e conectado ao GitHub, variáveis de ambiente do Supabase configuradas (produção/development). **Fase 0 concluída** (exceto preview env vars e `supabase link`, ambos de baixa prioridade).
