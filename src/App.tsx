@@ -6,6 +6,7 @@ import { AdminLayout } from './features/admin/AdminLayout';
 import { ExercisesPage } from './features/admin/ExercisesPage';
 import { PlansPage } from './features/admin/PlansPage';
 import { PlanDetailPage } from './features/admin/PlanDetailPage';
+import { ImportPlanPage } from './features/admin/ImportPlanPage';
 import './App.css';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
           <Route path="exercises" element={<ExercisesPage />} />
           <Route path="plans" element={<PlansPage />} />
           <Route path="plans/:planId" element={<PlanDetailPage />} />
+          <Route path="import" element={<ImportPlanPage />} />
         </Route>
       </Route>
     </Routes>

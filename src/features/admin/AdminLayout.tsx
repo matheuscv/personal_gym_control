@@ -15,6 +15,9 @@ export function AdminLayout() {
           <NavLink to="/admin/plans" className={({ isActive }) => (isActive ? 'active' : '')}>
             Planos
           </NavLink>
+          <NavLink to="/admin/import" className={({ isActive }) => (isActive ? 'active' : '')}>
+            Importar JSON
+          </NavLink>
         </nav>
       </header>
       <Outlet />

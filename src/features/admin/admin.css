@@ -97,3 +97,28 @@
 .admin-table input[type='number'] {
   width: 64px;
 }
+
+.import-hint {
+  color: var(--text);
+  font-size: 14px;
+  max-width: 60ch;
+}
+
+.import-textarea {
+  width: 100%;
+  max-width: 640px;
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--code-bg);
+  color: var(--text-h);
+  margin-bottom: 12px;
+  resize: vertical;
+}
+
+.import-success {
+  color: #1a7a4c;
+  font-size: 14px;
+}
