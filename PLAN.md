@@ -32,7 +32,7 @@
 - [ ] Projeto Vercel criado/linkado (`vercel link`) *(depende de ação manual sua)*
 - [ ] Variáveis de ambiente configuradas no Vercel (produção e preview)
 - [x] Migration SQL inicial escrita (`profiles` + trigger de auto-criação no signup)
-- [ ] Migration aplicada no banco remoto (via SQL Editor do dashboard, ou `supabase db push` após login)
+- [x] Migration aplicada no banco remoto (via SQL Editor do dashboard) — verificado via REST API (HTTP 200)
 
 ## Fase 1 — Seção Treino
 
@@ -83,3 +83,4 @@ Estas ações precisam de login/credenciais suas e não posso executar sozinho n
 - **10/08/2026** — Projeto criado, Fase 0 iniciada (scaffold local completo).
 - **10/08/2026** — Repositório remoto conectado e commit inicial enviado ao GitHub.
 - **10/08/2026** — Credenciais do Supabase recebidas, cliente configurado e migration inicial (`profiles`) escrita — falta aplicar no banco remoto.
+- **10/08/2026** — Migration `profiles` aplicada no banco remoto (via SQL Editor) e verificada via REST API.
