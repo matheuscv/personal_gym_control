@@ -27,10 +27,12 @@
 - [x] Função serverless placeholder (`api/health.ts`)
 - [x] Git local inicializado + primeiro commit
 - [x] Repositório remoto no GitHub criado e conectado (`github.com/matheuscv/personal_gym_control`)
-- [ ] Projeto Supabase criado (dashboard) + `supabase link` *(depende de ação manual sua)*
+- [x] Projeto Supabase criado (dashboard) — URL e anon key recebidas e configuradas em `.env` local
+- [ ] `supabase link` (CLI) — pendente login (`npx supabase login`)
 - [ ] Projeto Vercel criado/linkado (`vercel link`) *(depende de ação manual sua)*
 - [ ] Variáveis de ambiente configuradas no Vercel (produção e preview)
-- [ ] Schema inicial (migration SQL: `profiles`) aplicado no Supabase
+- [x] Migration SQL inicial escrita (`profiles` + trigger de auto-criação no signup)
+- [ ] Migration aplicada no banco remoto (via SQL Editor do dashboard, ou `supabase db push` após login)
 
 ## Fase 1 — Seção Treino
 
@@ -80,3 +82,4 @@ Estas ações precisam de login/credenciais suas e não posso executar sozinho n
 
 - **10/08/2026** — Projeto criado, Fase 0 iniciada (scaffold local completo).
 - **10/08/2026** — Repositório remoto conectado e commit inicial enviado ao GitHub.
+- **10/08/2026** — Credenciais do Supabase recebidas, cliente configurado e migration inicial (`profiles`) escrita — falta aplicar no banco remoto.
