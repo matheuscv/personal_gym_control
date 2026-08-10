@@ -25,8 +25,8 @@
 - [x] Dependências base instaladas (`react-router-dom`, `@supabase/supabase-js`, `zod`, `react-hook-form`, `@tanstack/react-query`, `date-fns`)
 - [x] `.env.example`, `.gitignore` ajustado, `README.md`
 - [x] Função serverless placeholder (`api/health.ts`)
-- [ ] Git local inicializado + primeiro commit
-- [ ] Repositório remoto no GitHub criado e conectado *(depende de ação manual sua — ver seção "Pendências")*
+- [x] Git local inicializado + primeiro commit
+- [x] Repositório remoto no GitHub criado e conectado (`github.com/matheuscv/personal_gym_control`)
 - [ ] Projeto Supabase criado (dashboard) + `supabase link` *(depende de ação manual sua)*
 - [ ] Projeto Vercel criado/linkado (`vercel link`) *(depende de ação manual sua)*
 - [ ] Variáveis de ambiente configuradas no Vercel (produção e preview)
@@ -79,3 +79,4 @@ Estas ações precisam de login/credenciais suas e não posso executar sozinho n
 ## Changelog
 
 - **10/08/2026** — Projeto criado, Fase 0 iniciada (scaffold local completo).
+- **10/08/2026** — Repositório remoto conectado e commit inicial enviado ao GitHub.
