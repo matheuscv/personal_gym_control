@@ -12,6 +12,17 @@
   font-size: 14px;
 }
 
+.home-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.home-header-actions a {
+  color: var(--text-h);
+  text-decoration: none;
+}
+
 .home-header button {
   font: inherit;
   padding: 6px 14px;
