@@ -1,5 +1,33 @@
-import { importPlanSchema } from './_lib/importSchema';
-import { supabaseForRequest } from './_lib/supabaseServer';
+import { createClient } from '@supabase/supabase-js';
+import { z } from 'zod';
+
+const importPlanExerciseSchema = z.object({
+  name: z.string().trim().min(1, 'Nome do exercício é obrigatório'),
+  muscle_group: z.string().trim().min(1).nullish(),
+  target_sets: z.number().int().positive().nullish(),
+  target_reps: z.string().trim().min(1).nullish(),
+});
+
+const importPlanSchema = z.object({
+  name: z.string().trim().min(1, 'Nome do plano é obrigatório'),
+  exercises: z.array(importPlanExerciseSchema).min(1, 'Informe ao menos um exercício'),
+});
+
+function supabaseForRequest(req: Request) {
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader) return null;
+
+  const url = process.env.VITE_SUPABASE_URL;
+  const anonKey = process.env.VITE_SUPABASE_ANON_KEY;
+  if (!url || !anonKey) {
+    throw new Error('Variáveis de ambiente do Supabase ausentes no servidor.');
+  }
+
+  return createClient(url, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+    auth: { persistSession: false },
+  });
+}
 
 function json(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {
