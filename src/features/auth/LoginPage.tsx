@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from './auth-context';
+import { PasswordInput } from './PasswordInput';
 import './LoginPage.css';
 
 const loginSchema = z.object({
@@ -90,11 +91,7 @@ export function LoginPage() {
             </label>
             <label>
               Senha
-              <input
-                type="password"
-                autoComplete="current-password"
-                {...loginForm.register('password')}
-              />
+              <PasswordInput autoComplete="current-password" {...loginForm.register('password')} />
               {loginForm.formState.errors.password && (
                 <span className="field-error">{loginForm.formState.errors.password.message}</span>
               )}
@@ -124,11 +121,7 @@ export function LoginPage() {
             </label>
             <label>
               Senha
-              <input
-                type="password"
-                autoComplete="new-password"
-                {...signupForm.register('password')}
-              />
+              <PasswordInput autoComplete="new-password" {...signupForm.register('password')} />
               {signupForm.formState.errors.password && (
                 <span className="field-error">
                   {signupForm.formState.errors.password.message}
