@@ -13,6 +13,16 @@
   color: #d0374c;
 }
 
+.offline-banner {
+  background: var(--warn-bg, #fbf1e3);
+  color: var(--warn, #a8631a);
+  border: 1px solid var(--warn, #a8631a);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
 .plan-tabs {
   display: flex;
   gap: 8px;

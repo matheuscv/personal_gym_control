@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchActivePlans, loadDailyWorkout, updateSessionSet } from './api';
+import { enqueuePatch, flushQueue, getQueuedCount } from './offlineQueue';
 import type { SessionSet, SessionSetPatch } from './types';
 import './DailyWorkoutPage.css';
 
@@ -22,10 +23,40 @@ export function DailyWorkoutPage() {
 
   const queryClient = useQueryClient();
   const [sets, setSets] = useState<SessionSet[]>([]);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [queuedCount, setQueuedCount] = useState(() => getQueuedCount());
 
   useEffect(() => {
     if (workoutQuery.data) setSets(workoutQuery.data.sets);
   }, [workoutQuery.data]);
+
+  const syncQueue = useCallback(async () => {
+    if (!navigator.onLine) return;
+    const { succeeded } = await flushQueue(updateSessionSet);
+    setQueuedCount(getQueuedCount());
+    if (succeeded > 0) {
+      queryClient.invalidateQueries({ queryKey: ['daily-workout', selectedPlanId] });
+    }
+  }, [queryClient, selectedPlanId]);
+
+  useEffect(() => {
+    syncQueue();
+
+    function handleOnline() {
+      setIsOffline(false);
+      syncQueue();
+    }
+    function handleOffline() {
+      setIsOffline(true);
+    }
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [syncQueue]);
 
   const setsByExercise = useMemo(() => {
     const map = new Map<number, SessionSet[]>();
@@ -41,10 +72,22 @@ export function DailyWorkoutPage() {
 
   async function persist(setId: number, patch: SessionSetPatch) {
     setSets((prev) => prev.map((s) => (s.id === setId ? { ...s, ...patch } : s)));
+
+    if (!navigator.onLine) {
+      enqueuePatch(setId, patch);
+      setQueuedCount(getQueuedCount());
+      return;
+    }
+
     try {
       await updateSessionSet(setId, patch);
     } catch {
-      queryClient.invalidateQueries({ queryKey: ['daily-workout', selectedPlanId] });
+      // Falha pode ser de rede (sem conexão de fato, mesmo com navigator.onLine
+      // true) ou do servidor. Enfileira para nao perder a alteracao — se for
+      // erro do servidor, a proxima sincronizacao tambem vai falhar e o item
+      // continua na fila, mas ao menos o dado digitado nao se perde.
+      enqueuePatch(setId, patch);
+      setQueuedCount(getQueuedCount());
     }
   }
 
@@ -63,6 +106,13 @@ export function DailyWorkoutPage() {
 
   return (
     <div className="daily-workout">
+      {(isOffline || queuedCount > 0) && (
+        <p className="offline-banner">
+          {isOffline
+            ? `Você está offline — as alterações serão salvas quando a conexão voltar${queuedCount > 0 ? ` (${queuedCount} pendente${queuedCount > 1 ? 's' : ''})` : ''}.`
+            : `Sincronizando ${queuedCount} alteração${queuedCount > 1 ? 'ões' : ''} pendente${queuedCount > 1 ? 's' : ''}...`}
+        </p>
+      )}
       <div className="plan-tabs">
         {plansQuery.data.map((plan) => (
           <button
