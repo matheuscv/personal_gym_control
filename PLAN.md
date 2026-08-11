@@ -3,7 +3,7 @@
 > Documento vivo de acompanhamento. Cada fase é atualizada (checkbox marcado + nota de data) conforme o desenvolvimento avança. Referência completa da proposta: `Proposta_Implementação.html`.
 
 **Início:** 10/08/2026
-**Status geral:** 🟢 Fases 0, 1 e 2 concluídas — próxima: Fase 3 (App Android)
+**Status geral:** 🟢 Fases 0, 1, 2 e 3 concluídas — próxima: Fase 4 (Multi-usuário e polimento)
 
 ---
 
@@ -57,8 +57,8 @@
 
 - [x] `npx cap init` (appId `com.matheuscv.personalgymcontrol`) + `npx cap add android`
 - [x] Build Android sem rotas/telas admin (`npm run build:android`) — confirmado que os assets copiados para `android/app/src/main/assets/public` não contêm nenhum chunk admin
-- [ ] Geração de APK local (Android Studio) e instalação/teste no celular — **não é possível neste ambiente** (sem Android Studio/SDK; só há um JDK 8, antigo demais para o Android Gradle Plugin 8.13 usado). Decisão com o usuário: seguir via GitHub Actions
-- [x] GitHub Actions para gerar APK (`.github/workflows/android-apk.yml`, debug build, dispara manualmente ou por tag `v*`) — **pendência do usuário**: configurar os secrets `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` no repositório (Settings → Secrets and variables → Actions), já que `gh` CLI não está disponível aqui para configurar via CLI
+- [x] Geração de APK — **via GitHub Actions**, não local (ambiente sem Android Studio/SDK; só JDK 8, antigo demais). Primeiro APK gerado com sucesso em 11/08/2026 (run [31514424616](https://github.com/matheuscv/personal_gym_control/actions/runs/31514424616)). Instalação no celular (sideload) é manual, feita pelo usuário
+- [x] GitHub Actions para gerar APK (`.github/workflows/android-apk.yml`, debug build) — dispara a cada push na `main`, manualmente, ou por tag `v*`. Secrets `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` configurados pelo usuário no repositório
 
 ## Fase 4 — Multi-usuário e polimento
 
@@ -72,11 +72,11 @@
 
 ## Pendências que dependem de você
 
-1. **GitHub Actions (build do APK)**: configure os secrets do repositório em Settings → Secrets and variables → Actions → New repository secret: `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` (mesmos valores do `.env` local — a anon key é destinada a ser pública, mas o workflow precisa dela como secret para o build funcionar). Depois disso (e do push desta sessão), rode o workflow em Actions → "Build Android APK" → "Run workflow", ou crie uma tag `v*` — o APK de debug fica disponível como artifact para baixar e instalar no celular (sideload).
-2. **Instalação do APK no celular**: depende de você baixar o `.apk` gerado pelo Actions e instalar manualmente (habilitar "fontes desconhecidas" no Android) — não há como eu fazer isso remotamente.
+1. **Instalação do APK no celular**: baixe o `.apk` mais recente em [Actions → Build Android APK](https://github.com/matheuscv/personal_gym_control/actions/workflows/android-apk.yml) (artifact `personal-gym-control-debug-apk`) e instale manualmente (habilitar "fontes desconhecidas" no Android) — não há como eu fazer isso remotamente. O workflow roda automaticamente a cada push na `main`, então sempre há uma versão atualizada disponível.
 
 ## Changelog
 
+- **11/08/2026** — **Fase 3 concluída.** Workflow do GitHub Actions ajustado para rodar a cada push na `main` (além de manual/tag). Primeiro APK de debug gerado com sucesso após corrigir 3 problemas encontrados nos testes reais: (1) `android/gradlew` sem permissão de execução — commitado no Windows, runner Linux não conseguia rodar `./gradlew`; (2) log de erro do job não é baixável via API sem admin no repo mesmo sendo público — passou a salvar o log como artifact (esses são baixáveis publicamente); (3) causa raiz do build falhar: workflow usava JDK 17, mas `@capacitor/android` 8.x exige JDK 21 (erro `invalid source release: 21`). Diagnóstico feito consultando a API REST do GitHub diretamente (repositório é público), sem precisar do `gh` CLI.
 - **11/08/2026** — Fase 3 iniciada: scaffold Android via Capacitor (`cap init` + `cap add android`), confirmado que a separação de bundle da Fase 1 se propaga corretamente para os assets nativos. Corrigido `.gitignore` raiz que ignorava `/android` inteiro (herdado do scaffold da Fase 0) — o projeto nativo deve ser versionado. Como este ambiente não tem Android Studio/SDK (só JDK 8, antigo demais), decidido com o usuário usar GitHub Actions para gerar o APK de debug na nuvem — workflow criado, pendente configuração de secrets pelo usuário (ver Pendências).
 - **11/08/2026** — **Fase 2 concluída.** Seção Evolução Corporal completa: migrations `body_reports`/`body_metrics` (18 campos de índices confirmados com o usuário), formulário manual + importador JSON no Admin, dashboard com KPIs/gráfico por índice/tabela histórica (disponível também no Android, somente leitura). Bug real encontrado e corrigido nos testes: `body_metrics.report_id` é `unique`, então o PostgREST embute a relação como objeto único (não array) — código assumia array e usava `?.[0]`, perdendo todos os dados.
 - **11/08/2026** — **Fase 1 concluída.** Dashboard de evolução de treino (`/evolucao`, gráfico de carga máxima por exercício via Chart.js) e separação real de bundle web/Android (rotas admin em `React.lazy` + condição `VITE_PLATFORM=android` resolvida em build-time, eliminando os `import()` do bundle Android — confirmado comparando os dois builds: nenhum chunk de admin no build Android). Novo script `npm run build:android`.
