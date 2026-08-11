@@ -3,7 +3,7 @@
 > Documento vivo de acompanhamento. Cada fase é atualizada (checkbox marcado + nota de data) conforme o desenvolvimento avança. Referência completa da proposta: `Proposta_Implementação.html`.
 
 **Início:** 10/08/2026
-**Status geral:** 🟢 Fase 0 e Fase 1 concluídas — próxima: Fase 2 (Evolução Corporal)
+**Status geral:** 🟢 Fases 0, 1 e 2 concluídas — próxima: Fase 3 (App Android)
 
 ---
 
@@ -47,11 +47,11 @@
 
 ## Fase 2 — Seção Evolução Corporal
 
-- [ ] Migrations: `body_reports`, `body_metrics` (+ políticas RLS)
-- [ ] Tela Admin (web-only): novo relatório — formulário manual (~18 campos) espelhando o layout Fitdays
-- [ ] Tela Admin (web-only): importador de JSON de relatório (colado a partir da leitura feita no chat) + validação (Zod, `/api`)
-- [ ] Dashboard de evolução corporal (baseado no HTML 2): gráficos por índice, tabela histórica, KPIs
-- [ ] Dashboard consumido também no build Android (somente leitura)
+- [x] Migrations: `body_reports`, `body_metrics` (+ políticas RLS) — 18 campos de índices decididos com o usuário (não havia referência exata disponível, HTML 2 original não estava no repositório)
+- [x] Tela Admin (web-only): novo relatório — formulário manual (18 campos) + lista com editar/remover
+- [x] Tela Admin (web-only): importador de JSON de relatório + validação (Zod, `/api`)
+- [x] Dashboard de evolução corporal: KPIs, gráfico por índice selecionável, tabela histórica
+- [x] Dashboard consumido também no build Android (somente leitura — herda a exclusão das rotas admin)
 
 ## Fase 3 — App Android (Capacitor)
 
@@ -80,6 +80,7 @@ Estas ações precisam de login/credenciais suas e não posso executar sozinho n
 
 ## Changelog
 
+- **11/08/2026** — **Fase 2 concluída.** Seção Evolução Corporal completa: migrations `body_reports`/`body_metrics` (18 campos de índices confirmados com o usuário), formulário manual + importador JSON no Admin, dashboard com KPIs/gráfico por índice/tabela histórica (disponível também no Android, somente leitura). Bug real encontrado e corrigido nos testes: `body_metrics.report_id` é `unique`, então o PostgREST embute a relação como objeto único (não array) — código assumia array e usava `?.[0]`, perdendo todos os dados.
 - **11/08/2026** — **Fase 1 concluída.** Dashboard de evolução de treino (`/evolucao`, gráfico de carga máxima por exercício via Chart.js) e separação real de bundle web/Android (rotas admin em `React.lazy` + condição `VITE_PLATFORM=android` resolvida em build-time, eliminando os `import()` do bundle Android — confirmado comparando os dois builds: nenhum chunk de admin no build Android). Novo script `npm run build:android`.
 - **11/08/2026** — Deploy de fim de sessão: encontrados e corrigidos 2 bugs críticos que deixavam toda a API (`/api/*`) inoperante em produção, só perceptíveis após deploy real (não reproduziam em `vercel dev` local, que trava neste ambiente): (1) `export default function` é o formato legado `(req,res)`, não o Web-standard — corrigido para `export function fetch`; (2) o bundler de funções do Vercel não inclui imports relativos locais entre arquivos (só pacotes de `node_modules`) — `api/import-workout-plan.ts` tornado autocontido, sem imports locais. Ambos endpoints (`/api/health`, `/api/import-workout-plan`) e o fluxo completo de importação autenticada testados e confirmados funcionando em produção real (`personalgymcontrol.vercel.app`).
 - **10/08/2026** — Importador de JSON de plano de treino (`/api/import-workout-plan`, Zod compartilhado com o frontend, upsert idempotente por nome). `api/` passou a ser type-checked. Lógica testada chamando o handler diretamente (sem `vercel dev`, que trava neste ambiente); teste E2E de rede pendente para após o próximo deploy. **Combinado com o usuário: deploy no Vercel só ao final da sessão, não a cada etapa** (o push automático já dispara deploy, então os commits ficam só locais até então).
