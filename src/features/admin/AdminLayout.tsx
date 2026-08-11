@@ -18,6 +18,12 @@ export function AdminLayout() {
           <NavLink to="/admin/import" className={({ isActive }) => (isActive ? 'active' : '')}>
             Importar JSON
           </NavLink>
+          <NavLink to="/admin/body-report" className={({ isActive }) => (isActive ? 'active' : '')}>
+            Relatório Corporal
+          </NavLink>
+          <NavLink to="/admin/body-report/import" className={({ isActive }) => (isActive ? 'active' : '')}>
+            Importar Relatório
+          </NavLink>
         </nav>
       </header>
       <Outlet />

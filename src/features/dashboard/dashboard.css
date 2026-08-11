@@ -38,3 +38,58 @@
   font-size: 13px;
   color: var(--accent);
 }
+
+.body-dashboard {
+  flex-grow: 1;
+  padding: 24px;
+  text-align: left;
+}
+
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.kpi-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kpi-label {
+  font-size: 12px;
+  color: var(--text);
+}
+
+.kpi-value {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.metric-chart-card {
+  margin-bottom: 24px;
+  max-width: 640px;
+}
+
+.metric-chart-card select {
+  font: inherit;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.body-history-scroll {
+  overflow-x: auto;
+}
+
+.body-history-scroll table {
+  min-width: max-content;
+}

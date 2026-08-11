@@ -12,7 +12,8 @@ export function HomePage() {
       <header className="home-header">
         <span>{user?.email}</span>
         <div className="home-header-actions">
-          <Link to="/evolucao">Evolução</Link>
+          <Link to="/evolucao">Evolução Treino</Link>
+          <Link to="/evolucao-corporal">Evolução Corporal</Link>
           {!IS_ANDROID && <Link to="/admin">Admin</Link>}
           <button type="button" onClick={() => signOut()}>
             Sair

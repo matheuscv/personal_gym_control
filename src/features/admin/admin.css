@@ -122,3 +122,67 @@
   color: #1a7a4c;
   font-size: 14px;
 }
+
+.body-report-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 720px;
+  margin-bottom: 32px;
+}
+
+.body-report-form > label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.body-report-form > label > input {
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.body-report-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.body-report-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+.body-report-grid input {
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.field-unit {
+  color: var(--text-faint, var(--text));
+  font-size: 11px;
+}
+
+.body-report-form button[type='submit'] {
+  align-self: flex-start;
+  font: inherit;
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
