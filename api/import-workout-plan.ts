@@ -1,4 +1,4 @@
-import { importPlanSchema } from '../src/features/admin/importSchema';
+import { importPlanSchema } from './_lib/importSchema';
 import { supabaseForRequest } from './_lib/supabaseServer';
 
 function json(body: unknown, status: number): Response {

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/auth-context';
-import { importPlanSchema } from './importSchema';
+import { importPlanSchema } from '../../../api/_lib/importSchema';
 
 const EXAMPLE = `{
   "name": "Treino A",
