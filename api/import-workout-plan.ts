@@ -8,7 +8,7 @@ function json(body: unknown, status: number): Response {
   });
 }
 
-export default async function handler(req: Request): Promise<Response> {
+export async function fetch(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
     return json({ error: 'Método não permitido.' }, 405);
   }
