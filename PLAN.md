@@ -64,8 +64,8 @@
 
 - [x] Fluxo de cadastro/convite de novos usuários — mantido self-service (decisão já confirmada); completado com recuperação de senha (`/redefinir-senha`) e reenvio de e-mail de confirmação
 - [x] Revisão de segurança das políticas RLS (teste de isolamento entre usuários) — 33/33 testes automatizados passaram (SELECT/UPDATE/DELETE/INSERT forjado/RPC entre 2 usuários reais, nas 8 tabelas)
-- [ ] PWA (manifest + service worker) para instalar a versão web em desktop/iOS
-- [ ] Offline-first na tela de treino do dia (fila local, sincroniza ao voltar a conexão)
+- [x] PWA (manifest + service worker) para instalar a versão web em desktop/iOS — `vite-plugin-pwa`, excluído do build Android (redundante com o WebView do Capacitor)
+- [x] Offline-first na tela de treino do dia (fila local, sincroniza ao voltar a conexão) — testado forçando offline real via navigator.onLine
 - [ ] Monitoramento de erros (opcional, ex. Sentry free tier)
 
 ---
@@ -76,6 +76,7 @@
 
 ## Changelog
 
+- **11/08/2026** — PWA instalável (manifest + service worker via `vite-plugin-pwa`, ícones gerados a partir do favicon) e offline-first na tela de treino do dia (fila de alterações em localStorage, sincroniza sozinha ao voltar a conexão ou reabrir o app). Ambos excluídos/adaptados corretamente para o build Android.
 - **11/08/2026** — Fase 4 iniciada: auditoria de RLS (33 testes automatizados, 2 usuários reais, sem falhas) e fluxo de auth completo (recuperação de senha via `/redefinir-senha`, reenvio de confirmação de e-mail). Redirect URLs do Supabase Auth ajustados para wildcard.
 - **11/08/2026** — Corrigido `site_url` do Supabase Auth (estava com o padrão `localhost:3000`, causando redirecionamento quebrado no link de confirmação de e-mail) — agora aponta para `https://personalgymcontrol.vercel.app`, sincronizado via `supabase config push`. Adicionado botão de mostrar/ocultar senha (ícone de olho) nos campos de senha do login/cadastro.
 - **11/08/2026** — **Fase 3 concluída.** Workflow do GitHub Actions ajustado para rodar a cada push na `main` (além de manual/tag). Primeiro APK de debug gerado com sucesso após corrigir 3 problemas encontrados nos testes reais: (1) `android/gradlew` sem permissão de execução — commitado no Windows, runner Linux não conseguia rodar `./gradlew`; (2) log de erro do job não é baixável via API sem admin no repo mesmo sendo público — passou a salvar o log como artifact (esses são baixáveis publicamente); (3) causa raiz do build falhar: workflow usava JDK 17, mas `@capacitor/android` 8.x exige JDK 21 (erro `invalid source release: 21`). Diagnóstico feito consultando a API REST do GitHub diretamente (repositório é público), sem precisar do `gh` CLI.
