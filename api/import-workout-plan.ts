@@ -1,5 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
+import * as Sentry from '@sentry/node';
 import { z } from 'zod';
+
+if (process.env.SENTRY_DSN) {
+  Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.2 });
+}
 
 const importPlanExerciseSchema = z.object({
   name: z.string().trim().min(1, 'Nome do exercício é obrigatório'),
@@ -37,6 +42,16 @@ function json(body: unknown, status: number): Response {
 }
 
 export async function fetch(req: Request): Promise<Response> {
+  try {
+    return await handleRequest(req);
+  } catch (err) {
+    Sentry.captureException(err);
+    await Sentry.flush(2000);
+    return json({ error: 'Erro interno do servidor.' }, 500);
+  }
+}
+
+async function handleRequest(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
     return json({ error: 'Método não permitido.' }, 405);
   }

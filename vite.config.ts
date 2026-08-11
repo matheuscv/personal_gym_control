@@ -8,6 +8,13 @@ export default defineConfig(({ mode }) => {
   const isAndroid = env.VITE_PLATFORM === 'android'
 
   return {
+    define: {
+      // SENTRY_DSN não é secreto (chave pública de ingestão), mas não tem
+      // prefixo VITE_ porque é provisionado pela integração Sentry no
+      // Vercel — expõe explicitamente para o bundle do cliente aqui em vez
+      // de duplicar a env var com um segundo nome.
+      __SENTRY_DSN__: JSON.stringify(env.SENTRY_DSN ?? ''),
+    },
     plugins: [
       react(),
       // O app Android (Capacitor) ja empacota os assets localmente no WebView —
