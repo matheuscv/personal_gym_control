@@ -3,7 +3,7 @@
 > Documento vivo de acompanhamento. Cada fase é atualizada (checkbox marcado + nota de data) conforme o desenvolvimento avança. Referência completa da proposta: `Proposta_Implementação.html`.
 
 **Início:** 10/08/2026
-**Status geral:** 🟢 Fase 0 concluída — Fase 1 em andamento
+**Status geral:** 🟢 Fase 0 e Fase 1 concluídas — próxima: Fase 2 (Evolução Corporal)
 
 ---
 
@@ -42,8 +42,8 @@
 - [x] Registro de séries (peso/tempo, concluído) persistido por sessão
 - [x] Tela Admin (web-only): CRUD manual de planos A/B/C
 - [x] Tela Admin (web-only): importador de JSON de plano de treino + validação (Zod, `/api`)
-- [ ] Dashboard de evolução de treino (carga máxima por exercício ao longo do tempo)
-- [ ] Separação de bundle web vs android (rotas admin fora do build Android)
+- [x] Dashboard de evolução de treino (carga máxima por exercício ao longo do tempo)
+- [x] Separação de bundle web vs android (rotas admin fora do build Android)
 
 ## Fase 2 — Seção Evolução Corporal
 
@@ -80,6 +80,7 @@ Estas ações precisam de login/credenciais suas e não posso executar sozinho n
 
 ## Changelog
 
+- **11/08/2026** — **Fase 1 concluída.** Dashboard de evolução de treino (`/evolucao`, gráfico de carga máxima por exercício via Chart.js) e separação real de bundle web/Android (rotas admin em `React.lazy` + condição `VITE_PLATFORM=android` resolvida em build-time, eliminando os `import()` do bundle Android — confirmado comparando os dois builds: nenhum chunk de admin no build Android). Novo script `npm run build:android`.
 - **11/08/2026** — Deploy de fim de sessão: encontrados e corrigidos 2 bugs críticos que deixavam toda a API (`/api/*`) inoperante em produção, só perceptíveis após deploy real (não reproduziam em `vercel dev` local, que trava neste ambiente): (1) `export default function` é o formato legado `(req,res)`, não o Web-standard — corrigido para `export function fetch`; (2) o bundler de funções do Vercel não inclui imports relativos locais entre arquivos (só pacotes de `node_modules`) — `api/import-workout-plan.ts` tornado autocontido, sem imports locais. Ambos endpoints (`/api/health`, `/api/import-workout-plan`) e o fluxo completo de importação autenticada testados e confirmados funcionando em produção real (`personalgymcontrol.vercel.app`).
 - **10/08/2026** — Importador de JSON de plano de treino (`/api/import-workout-plan`, Zod compartilhado com o frontend, upsert idempotente por nome). `api/` passou a ser type-checked. Lógica testada chamando o handler diretamente (sem `vercel dev`, que trava neste ambiente); teste E2E de rede pendente para após o próximo deploy. **Combinado com o usuário: deploy no Vercel só ao final da sessão, não a cada etapa** (o push automático já dispara deploy, então os commits ficam só locais até então).
 - **10/08/2026** — Tela Admin (CRUD de exercícios e planos A/B/C, com adicionar/reordenar/editar exercícios do plano). Migration de correção: troca de ordem via função de banco (`swap_plan_exercise_order`) para evitar conflito com a constraint unique durante o swap. Testada via agent-browser ponta a ponta; usuário de teste criado via Admin API do Supabase (rate limit de e-mail do signup normal foi atingido) e removido ao final.
