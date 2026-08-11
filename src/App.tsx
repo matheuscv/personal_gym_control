@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { LoginPage } from './features/auth/LoginPage';
+import { ResetPasswordPage } from './features/auth/ResetPasswordPage';
 import { ProtectedRoute } from './features/auth/ProtectedRoute';
 import { HomePage } from './pages/HomePage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
@@ -43,6 +44,7 @@ function App() {
     <Suspense fallback={<p className="auth-loading">Carregando...</p>}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/evolucao" element={<DashboardPage />} />

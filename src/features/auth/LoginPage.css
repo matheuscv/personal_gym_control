@@ -139,3 +139,20 @@ form button[type='submit']:disabled {
   font-size: 14px;
   text-align: center;
 }
+
+.auth-hint {
+  color: var(--text);
+  font-size: 13px;
+  margin: -8px 0 0;
+}
+
+.auth-link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  font-size: 13px;
+  text-align: center;
+  cursor: pointer;
+  text-decoration: underline;
+}

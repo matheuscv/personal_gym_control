@@ -12,6 +12,9 @@ export interface AuthContextValue {
     displayName: string
   ) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<{ error: string | null }>;
+  updatePassword: (newPassword: string) => Promise<{ error: string | null }>;
+  resendConfirmationEmail: (email: string) => Promise<{ error: string | null }>;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
