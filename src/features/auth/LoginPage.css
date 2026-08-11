@@ -8,12 +8,16 @@
 
 .auth-card {
   width: 100%;
-  max-width: 360px;
+  max-width: 380px;
   text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
 }
 
 .auth-card h1 {
-  font-size: 28px;
+  font-size: 22px;
   text-align: center;
   margin-bottom: 24px;
 }
@@ -34,12 +38,15 @@
   color: var(--text);
   cursor: pointer;
   font: inherit;
+  font-family: var(--heading);
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .auth-tabs button.active {
   background: var(--accent-bg);
   color: var(--accent);
-  font-weight: 600;
 }
 
 form {
@@ -61,7 +68,7 @@ form input {
   font: inherit;
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--bg);
   color: var(--text-h);
 }
@@ -110,11 +117,15 @@ form input:focus-visible {
 
 form button[type='submit'] {
   font: inherit;
-  padding: 10px;
-  border-radius: 6px;
+  font-family: var(--heading);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-size: 14px;
+  padding: 11px;
+  border-radius: 8px;
   border: none;
   background: var(--accent);
-  color: #fff;
+  color: var(--bg);
   cursor: pointer;
 }
 
@@ -124,12 +135,12 @@ form button[type='submit']:disabled {
 }
 
 .field-error {
-  color: #d0374c;
+  color: var(--danger);
   font-size: 13px;
 }
 
 .auth-error {
-  color: #d0374c;
+  color: var(--danger);
   font-size: 14px;
   margin: 0;
 }

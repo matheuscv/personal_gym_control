@@ -47,7 +47,7 @@ export function PlansPage() {
 
   return (
     <div className="admin-section">
-      <h2>Planos</h2>
+      <h2 className="section-title">Planos</h2>
 
       <form className="admin-form" onSubmit={handleSubmit}>
         <input placeholder="Nome (ex: Treino A)" value={name} onChange={(e) => setName(e.target.value)} />

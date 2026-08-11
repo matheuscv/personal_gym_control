@@ -15,7 +15,10 @@ import './dashboard.css';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip);
 
-const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#2f6fed';
+const rootStyle = getComputedStyle(document.documentElement);
+const accentColor = rootStyle.getPropertyValue('--accent').trim() || '#2f6fed';
+const textColor = rootStyle.getPropertyValue('--text').trim() || '#9a9c9f';
+const gridColor = rootStyle.getPropertyValue('--border').trim() || '#3a3d42';
 
 export function BodyDashboardPage() {
   const progressQuery = useQuery({ queryKey: ['body-progress'], queryFn: fetchBodyProgress });
@@ -27,15 +30,23 @@ export function BodyDashboardPage() {
   }, [progressQuery.data]);
 
   if (progressQuery.isLoading) {
-    return <p className="workout-status">Carregando evolução...</p>;
+    return (
+      <div className="dashboard-page-wrap">
+        <h1>Evolução corporal</h1>
+        <p className="workout-status">Carregando evolução...</p>
+      </div>
+    );
   }
 
   const reports = progressQuery.data ?? [];
   if (reports.length === 0) {
     return (
-      <div className="dashboard-page empty">
-        <p>Ainda não há relatórios de composição corporal registrados.</p>
-        <p>Registre um relatório na tela Admin (manual ou via importação de JSON) para ver sua evolução aqui.</p>
+      <div className="dashboard-page-wrap">
+        <h1>Evolução corporal</h1>
+        <div className="dashboard-page empty">
+          <p>Ainda não há relatórios de composição corporal registrados.</p>
+          <p>Registre um relatório na tela Admin (manual ou via importação de JSON) para ver sua evolução aqui.</p>
+        </div>
       </div>
     );
   }
@@ -53,7 +64,9 @@ export function BodyDashboardPage() {
     : [];
 
   return (
-    <div className="body-dashboard">
+    <div className="dashboard-page-wrap">
+      <h1>Evolução corporal</h1>
+      <div className="body-dashboard">
       <div className="kpi-row">
         <div className="kpi-card">
           <span className="kpi-label">Peso atual</span>
@@ -103,15 +116,18 @@ export function BodyDashboardPage() {
             options={{
               responsive: true,
               plugins: { legend: { display: false } },
-              scales: { y: { beginAtZero: false } },
+              scales: {
+                x: { ticks: { color: textColor }, grid: { color: gridColor } },
+                y: { beginAtZero: false, ticks: { color: textColor }, grid: { color: gridColor } },
+              },
             }}
           />
         </div>
       )}
 
-      <h3>Histórico</h3>
+      <h2 className="section-title">Histórico</h2>
       <div className="body-history-scroll">
-        <table className="admin-table">
+        <table className="body-history-table">
           <thead>
             <tr>
               <th>Data</th>
@@ -131,6 +147,7 @@ export function BodyDashboardPage() {
             ))}
           </tbody>
         </table>
+      </div>
       </div>
     </div>
   );

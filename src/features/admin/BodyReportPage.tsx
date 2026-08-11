@@ -74,7 +74,7 @@ export function BodyReportPage() {
 
   return (
     <div className="admin-section">
-      <h2>Relatório de composição corporal</h2>
+      <h2 className="section-title">Relatório de composição corporal</h2>
 
       <form className="body-report-form" onSubmit={handleSubmit}>
         <label>
@@ -108,7 +108,7 @@ export function BodyReportPage() {
         </button>
       </form>
 
-      <h3>Relatórios registrados</h3>
+      <h3 className="section-title">Relatórios registrados</h3>
       <table className="admin-table">
         <thead>
           <tr>

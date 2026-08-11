@@ -30,8 +30,8 @@ export default defineConfig(({ mode }) => {
             short_name: 'Gym Control',
             description: 'Diário de treino e evolução corporal',
             lang: 'pt-BR',
-            theme_color: '#aa3bff',
-            background_color: '#ffffff',
+            theme_color: '#D9A441',
+            background_color: '#17181A',
             display: 'standalone',
             start_url: '/',
             icons: [

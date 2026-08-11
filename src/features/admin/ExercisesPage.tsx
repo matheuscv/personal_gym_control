@@ -43,7 +43,7 @@ export function ExercisesPage() {
 
   return (
     <div className="admin-section">
-      <h2>Exercícios</h2>
+      <h2 className="section-title">Exercícios</h2>
 
       <form className="admin-form" onSubmit={handleSubmit}>
         <input placeholder="Nome" value={name} onChange={(e) => setName(e.target.value)} />

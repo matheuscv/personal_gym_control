@@ -69,7 +69,7 @@ export function ImportPlanPage() {
 
   return (
     <div className="admin-section">
-      <h2>Importar plano (JSON)</h2>
+      <h2 className="section-title">Importar plano (JSON)</h2>
       <p className="import-hint">
         Cole aqui o JSON gerado pelo Claude com o nome do plano e a lista de exercícios. Reimportar um plano
         com o mesmo nome substitui os exercícios existentes.

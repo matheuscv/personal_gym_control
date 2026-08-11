@@ -3,7 +3,9 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { LoginPage } from './features/auth/LoginPage';
 import { ResetPasswordPage } from './features/auth/ResetPasswordPage';
 import { ProtectedRoute } from './features/auth/ProtectedRoute';
+import { AppShell } from './components/AppShell';
 import { HomePage } from './pages/HomePage';
+import { DailyWorkoutPage } from './features/workout/DailyWorkoutPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { BodyDashboardPage } from './features/dashboard/BodyDashboardPage';
 import './App.css';
@@ -46,26 +48,29 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
         <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/evolucao" element={<DashboardPage />} />
-          <Route path="/evolucao-corporal" element={<BodyDashboardPage />} />
-          {AdminLayout &&
-            ExercisesPage &&
-            PlansPage &&
-            PlanDetailPage &&
-            ImportPlanPage &&
-            BodyReportPage &&
-            ImportBodyReportPage && (
-              <Route path="/admin" element={<AdminLayout />}>
-                <Route index element={<Navigate to="exercises" replace />} />
-                <Route path="exercises" element={<ExercisesPage />} />
-                <Route path="plans" element={<PlansPage />} />
-                <Route path="plans/:planId" element={<PlanDetailPage />} />
-                <Route path="import" element={<ImportPlanPage />} />
-                <Route path="body-report" element={<BodyReportPage />} />
-                <Route path="body-report/import" element={<ImportBodyReportPage />} />
-              </Route>
-            )}
+          <Route element={<AppShell />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/treino" element={<DailyWorkoutPage />} />
+            <Route path="/evolucao" element={<DashboardPage />} />
+            <Route path="/evolucao-corporal" element={<BodyDashboardPage />} />
+            {AdminLayout &&
+              ExercisesPage &&
+              PlansPage &&
+              PlanDetailPage &&
+              ImportPlanPage &&
+              BodyReportPage &&
+              ImportBodyReportPage && (
+                <Route path="/admin" element={<AdminLayout />}>
+                  <Route index element={<Navigate to="exercises" replace />} />
+                  <Route path="exercises" element={<ExercisesPage />} />
+                  <Route path="plans" element={<PlansPage />} />
+                  <Route path="plans/:planId" element={<PlanDetailPage />} />
+                  <Route path="import" element={<ImportPlanPage />} />
+                  <Route path="body-report" element={<BodyReportPage />} />
+                  <Route path="body-report/import" element={<ImportBodyReportPage />} />
+                </Route>
+              )}
+          </Route>
         </Route>
       </Routes>
     </Suspense>

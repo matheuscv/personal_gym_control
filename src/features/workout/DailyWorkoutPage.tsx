@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchActivePlans, loadDailyWorkout, updateSessionSet } from './api';
 import { enqueuePatch, flushQueue, getQueuedCount } from './offlineQueue';
@@ -92,20 +93,29 @@ export function DailyWorkoutPage() {
   }
 
   if (plansQuery.isLoading) {
-    return <p className="workout-status">Carregando planos...</p>;
+    return (
+      <div className="daily-workout">
+        <h1>Treino do dia</h1>
+        <p className="workout-status">Carregando planos...</p>
+      </div>
+    );
   }
 
   if (!plansQuery.data || plansQuery.data.length === 0) {
     return (
       <div className="daily-workout empty">
+        <h1>Treino do dia</h1>
         <p>Nenhum plano de treino ativo encontrado.</p>
-        <p>Crie um plano na tela Admin (em breve) para começar a registrar seus treinos.</p>
+        <p>
+          Crie um plano na tela <Link to="/admin">Admin</Link> para começar a registrar seus treinos.
+        </p>
       </div>
     );
   }
 
   return (
     <div className="daily-workout">
+      <h1>Treino do dia</h1>
       {(isOffline || queuedCount > 0) && (
         <p className="offline-banner">
           {isOffline
@@ -195,11 +205,15 @@ export function DailyWorkoutPage() {
                         />
                       </td>
                       <td>
-                        <input
-                          type="checkbox"
-                          checked={set.completed}
-                          onChange={(e) => persist(set.id, { completed: e.target.checked })}
-                        />
+                        <button
+                          type="button"
+                          className={`check-btn ${set.completed ? 'checked' : ''}`}
+                          aria-pressed={set.completed}
+                          aria-label={set.completed ? 'Marcar como não concluída' : 'Marcar como concluída'}
+                          onClick={() => persist(set.id, { completed: !set.completed })}
+                        >
+                          ✓
+                        </button>
                       </td>
                     </tr>
                   ))}

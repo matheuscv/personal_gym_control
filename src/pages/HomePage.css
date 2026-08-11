@@ -1,0 +1,95 @@
+.welcome-page {
+  flex-grow: 1;
+  padding: 28px 20px 40px;
+  text-align: left;
+  max-width: 760px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.welcome-eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 4px;
+}
+
+.welcome-summary {
+  color: var(--text);
+  font-size: 14px;
+  margin: 4px 0 28px;
+}
+
+.welcome-summary strong {
+  color: var(--text-h);
+}
+
+.welcome-summary a {
+  color: var(--accent);
+}
+
+.welcome-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 36px;
+}
+
+.welcome-card {
+  display: block;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.welcome-card:hover {
+  border-color: var(--accent-border);
+  transform: translateY(-1px);
+}
+
+.welcome-card .section-title {
+  display: block;
+  font-size: 14px;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.welcome-card p {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.tips-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tips-list li {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  position: relative;
+  padding-left: 34px;
+}
+
+.tips-list li::before {
+  content: '✓';
+  position: absolute;
+  left: 14px;
+  color: var(--ok);
+  font-weight: 700;
+}

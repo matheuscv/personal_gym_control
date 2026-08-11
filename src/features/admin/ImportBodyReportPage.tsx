@@ -70,7 +70,7 @@ export function ImportBodyReportPage() {
 
   return (
     <div className="admin-section">
-      <h2>Importar relatório corporal (JSON)</h2>
+      <h2 className="section-title">Importar relatório corporal (JSON)</h2>
       <p className="import-hint">
         Cole aqui o JSON com os índices extraídos pelo Claude a partir da foto do relatório de bioimpedância.
         Apenas <code>measured_at</code> é obrigatório — os demais campos podem ser omitidos. Reimportar um
