@@ -52,6 +52,8 @@ export function LoginPage() {
     setMode(next);
     setFormError(null);
     setSignupDone(false);
+    loginForm.reset();
+    signupForm.reset();
   };
 
   return (
@@ -81,17 +83,17 @@ export function LoginPage() {
             Cadastro criado. Verifique seu e-mail para confirmar a conta antes de entrar.
           </p>
         ) : mode === 'login' ? (
-          <form onSubmit={onLogin} noValidate>
+          <form onSubmit={onLogin} noValidate autoComplete="off">
             <label>
               E-mail
-              <input type="email" autoComplete="email" {...loginForm.register('email')} />
+              <input type="email" autoComplete="off" {...loginForm.register('email')} />
               {loginForm.formState.errors.email && (
                 <span className="field-error">{loginForm.formState.errors.email.message}</span>
               )}
             </label>
             <label>
               Senha
-              <PasswordInput autoComplete="current-password" {...loginForm.register('password')} />
+              <PasswordInput autoComplete="new-password" {...loginForm.register('password')} />
               {loginForm.formState.errors.password && (
                 <span className="field-error">{loginForm.formState.errors.password.message}</span>
               )}
@@ -102,10 +104,10 @@ export function LoginPage() {
             </button>
           </form>
         ) : (
-          <form onSubmit={onSignup} noValidate>
+          <form onSubmit={onSignup} noValidate autoComplete="off">
             <label>
               Nome
-              <input autoComplete="name" {...signupForm.register('displayName')} />
+              <input autoComplete="off" {...signupForm.register('displayName')} />
               {signupForm.formState.errors.displayName && (
                 <span className="field-error">
                   {signupForm.formState.errors.displayName.message}
@@ -114,7 +116,7 @@ export function LoginPage() {
             </label>
             <label>
               E-mail
-              <input type="email" autoComplete="email" {...signupForm.register('email')} />
+              <input type="email" autoComplete="off" {...signupForm.register('email')} />
               {signupForm.formState.errors.email && (
                 <span className="field-error">{signupForm.formState.errors.email.message}</span>
               )}
