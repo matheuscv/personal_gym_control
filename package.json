@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:android": "cross-env VITE_PLATFORM=android tsc -b && cross-env VITE_PLATFORM=android vite build",
     "lint": "oxlint",
     "preview": "vite preview"
   },
@@ -13,8 +14,10 @@
     "@hookform/resolvers": "^5.7.1",
     "@supabase/supabase-js": "^2.112.2",
     "@tanstack/react-query": "^5.101.4",
+    "chart.js": "^4.5.1",
     "date-fns": "^4.4.0",
     "react": "^19.2.8",
+    "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.2.8",
     "react-hook-form": "^7.85.0",
     "react-router-dom": "^7.18.2",
@@ -25,6 +28,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
+    "cross-env": "^10.1.0",
     "oxlint": "^1.75.0",
     "typescript": "~6.0.2",
     "vite": "^8.2.0"
