@@ -28,9 +28,6 @@ dist-ssr
 .env.local
 .env.*.local
 
-# android (gerado pelo Capacitor)
-/android
-
 # supabase local
 supabase/.branches
 supabase/.temp
