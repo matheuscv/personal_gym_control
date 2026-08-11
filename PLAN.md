@@ -55,10 +55,10 @@
 
 ## Fase 3 — App Android (Capacitor)
 
-- [ ] `npx cap init` + `npx cap add android`
-- [ ] Build Android sem rotas/telas admin (variável `VITE_PLATFORM=android`)
-- [ ] Geração de APK local (Android Studio) e instalação/teste no celular
-- [ ] (Opcional) GitHub Actions para gerar APK automaticamente a cada release
+- [x] `npx cap init` (appId `com.matheuscv.personalgymcontrol`) + `npx cap add android`
+- [x] Build Android sem rotas/telas admin (`npm run build:android`) — confirmado que os assets copiados para `android/app/src/main/assets/public` não contêm nenhum chunk admin
+- [ ] Geração de APK local (Android Studio) e instalação/teste no celular — **não é possível neste ambiente** (sem Android Studio/SDK; só há um JDK 8, antigo demais para o Android Gradle Plugin 8.13 usado). Decisão com o usuário: seguir via GitHub Actions
+- [x] GitHub Actions para gerar APK (`.github/workflows/android-apk.yml`, debug build, dispara manualmente ou por tag `v*`) — **pendência do usuário**: configurar os secrets `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` no repositório (Settings → Secrets and variables → Actions), já que `gh` CLI não está disponível aqui para configurar via CLI
 
 ## Fase 4 — Multi-usuário e polimento
 
@@ -72,14 +72,12 @@
 
 ## Pendências que dependem de você
 
-Estas ações precisam de login/credenciais suas e não posso executar sozinho neste ambiente:
-
-1. **GitHub**: CLI `gh` não está instalado aqui. Ou (a) instale o [GitHub CLI](https://cli.github.com/) e rode `gh auth login`, ou (b) crie o repositório manualmente em github.com (`personal_gym_control`, privado) e me passe a URL remota para eu configurar o `git remote` e dar push.
-2. **Vercel**: CLI já instalado, mas sem login. Rode `vercel login` (abre o navegador) e me avise quando terminar — eu sigo com `vercel link` e configuração das env vars.
-3. **Supabase**: CLI disponível via `npx supabase`, mas sem projeto criado. Crie um projeto em [supabase.com/dashboard](https://supabase.com/dashboard) (free tier) e me passe a **Project URL** e a **anon key** (e a **service role key**, com cuidado — só vai para variável de ambiente do backend, nunca para o frontend).
+1. **GitHub Actions (build do APK)**: configure os secrets do repositório em Settings → Secrets and variables → Actions → New repository secret: `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` (mesmos valores do `.env` local — a anon key é destinada a ser pública, mas o workflow precisa dela como secret para o build funcionar). Depois disso (e do push desta sessão), rode o workflow em Actions → "Build Android APK" → "Run workflow", ou crie uma tag `v*` — o APK de debug fica disponível como artifact para baixar e instalar no celular (sideload).
+2. **Instalação do APK no celular**: depende de você baixar o `.apk` gerado pelo Actions e instalar manualmente (habilitar "fontes desconhecidas" no Android) — não há como eu fazer isso remotamente.
 
 ## Changelog
 
+- **11/08/2026** — Fase 3 iniciada: scaffold Android via Capacitor (`cap init` + `cap add android`), confirmado que a separação de bundle da Fase 1 se propaga corretamente para os assets nativos. Corrigido `.gitignore` raiz que ignorava `/android` inteiro (herdado do scaffold da Fase 0) — o projeto nativo deve ser versionado. Como este ambiente não tem Android Studio/SDK (só JDK 8, antigo demais), decidido com o usuário usar GitHub Actions para gerar o APK de debug na nuvem — workflow criado, pendente configuração de secrets pelo usuário (ver Pendências).
 - **11/08/2026** — **Fase 2 concluída.** Seção Evolução Corporal completa: migrations `body_reports`/`body_metrics` (18 campos de índices confirmados com o usuário), formulário manual + importador JSON no Admin, dashboard com KPIs/gráfico por índice/tabela histórica (disponível também no Android, somente leitura). Bug real encontrado e corrigido nos testes: `body_metrics.report_id` é `unique`, então o PostgREST embute a relação como objeto único (não array) — código assumia array e usava `?.[0]`, perdendo todos os dados.
 - **11/08/2026** — **Fase 1 concluída.** Dashboard de evolução de treino (`/evolucao`, gráfico de carga máxima por exercício via Chart.js) e separação real de bundle web/Android (rotas admin em `React.lazy` + condição `VITE_PLATFORM=android` resolvida em build-time, eliminando os `import()` do bundle Android — confirmado comparando os dois builds: nenhum chunk de admin no build Android). Novo script `npm run build:android`.
 - **11/08/2026** — Deploy de fim de sessão: encontrados e corrigidos 2 bugs críticos que deixavam toda a API (`/api/*`) inoperante em produção, só perceptíveis após deploy real (não reproduziam em `vercel dev` local, que trava neste ambiente): (1) `export default function` é o formato legado `(req,res)`, não o Web-standard — corrigido para `export function fetch`; (2) o bundler de funções do Vercel não inclui imports relativos locais entre arquivos (só pacotes de `node_modules`) — `api/import-workout-plan.ts` tornado autocontido, sem imports locais. Ambos endpoints (`/api/health`, `/api/import-workout-plan`) e o fluxo completo de importação autenticada testados e confirmados funcionando em produção real (`personalgymcontrol.vercel.app`).
