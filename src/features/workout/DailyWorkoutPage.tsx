@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Dumbbell } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { EmptyState } from '../../components/EmptyState';
 import { fetchActivePlans, loadDailyWorkout, updateSessionSet } from './api';
 import { enqueuePatch, flushQueue, getQueuedCount } from './offlineQueue';
 import type { SessionSet, SessionSetPatch } from './types';
@@ -105,10 +106,13 @@ export function DailyWorkoutPage() {
     return (
       <div className="daily-workout empty">
         <h1>Treino do dia</h1>
-        <p>Nenhum plano de treino ativo encontrado.</p>
-        <p>
-          Crie um plano na tela <Link to="/admin">Admin</Link> para começar a registrar seus treinos.
-        </p>
+        <EmptyState
+          icon={<Dumbbell size={34} />}
+          title="Nenhum treino por aqui ainda"
+          description="Crie um plano de treino para começar a registrar suas séries do dia a dia."
+          actionLabel="Criar plano em Configuração"
+          actionTo="/admin/plans"
+        />
       </div>
     );
   }

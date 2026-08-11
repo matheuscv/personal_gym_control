@@ -40,7 +40,7 @@ export function HomePage() {
         {!plansQuery.isLoading && (!plansQuery.data || plansQuery.data.length === 0) && (
           <p>
             Você ainda não tem um plano de treino ativo. Crie um em{' '}
-            <Link to="/admin">Admin</Link>.
+            <Link to="/admin">Configuração</Link>.
           </p>
         )}
       </div>

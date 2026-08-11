@@ -8,6 +8,8 @@ import {
   Tooltip,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { TrendingUp } from 'lucide-react';
+import { EmptyState } from '../../components/EmptyState';
 import { fetchExerciseProgress } from './api';
 import './dashboard.css';
 
@@ -34,10 +36,13 @@ export function DashboardPage() {
     return (
       <div className="dashboard-page-wrap">
         <h1>Evolução do treino</h1>
-        <div className="dashboard-page empty">
-          <p>Ainda não há séries concluídas com peso registrado.</p>
-          <p>Preencha e marque como concluídas as séries na tela de treino do dia para ver sua evolução aqui.</p>
-        </div>
+        <EmptyState
+          icon={<TrendingUp size={34} />}
+          title="Sua evolução vai aparecer aqui"
+          description="Marque suas séries como concluídas na tela de treino do dia para começar a acompanhar sua carga ao longo do tempo."
+          actionLabel="Ir para Treino do dia"
+          actionTo="/treino"
+        />
       </div>
     );
   }

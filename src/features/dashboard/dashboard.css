@@ -12,13 +12,6 @@
   gap: 16px;
 }
 
-.dashboard-page.empty {
-  display: block;
-  text-align: center;
-  padding: 40px 24px;
-  color: var(--text);
-}
-
 .progress-card {
   background: var(--panel);
   border: 1px solid var(--border);

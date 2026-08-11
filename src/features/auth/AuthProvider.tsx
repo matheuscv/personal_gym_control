@@ -50,6 +50,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error?.message ?? null };
   };
 
+  const updateDisplayName = async (displayName: string) => {
+    const { error } = await supabase.auth.updateUser({ data: { display_name: displayName } });
+    return { error: error?.message ?? null };
+  };
+
   const resendConfirmationEmail = async (email: string) => {
     const { error } = await supabase.auth.resend({ type: 'signup', email });
     return { error: error?.message ?? null };
@@ -68,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signOut,
         sendPasswordReset,
         updatePassword,
+        updateDisplayName,
         resendConfirmationEmail,
       }}
     >

@@ -20,7 +20,7 @@
     rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
 
   --sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: 'Oswald', var(--sans);
+  --heading: 'Manrope', var(--sans);
   --mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
 
   font: 16px/145% var(--sans);
@@ -34,25 +34,23 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg: #faf8f4;
-    --panel: #ffffff;
-    --panel-2: #f1eee6;
-    --text-h: #1c1a16;
-    --text: #6b6558;
-    --border: #ddd8cc;
-    --accent: #a9720f;
-    --accent-bg: rgba(169, 114, 15, 0.1);
-    --accent-border: #a9720f;
-    --ok: #3f7d4e;
-    --ok-bg: rgba(63, 125, 78, 0.1);
-    --danger: #b34324;
-    --danger-bg: rgba(179, 67, 36, 0.1);
-    --social-bg: rgba(241, 238, 230, 0.7);
-    --shadow:
-      rgba(0, 0, 0, 0.08) 0 10px 15px -3px, rgba(0, 0, 0, 0.04) 0 4px 6px -2px;
-  }
+:root[data-theme='light'] {
+  --bg: #faf8f4;
+  --panel: #ffffff;
+  --panel-2: #f1eee6;
+  --text-h: #1c1a16;
+  --text: #6b6558;
+  --border: #ddd8cc;
+  --accent: #a9720f;
+  --accent-bg: rgba(169, 114, 15, 0.1);
+  --accent-border: #a9720f;
+  --ok: #3f7d4e;
+  --ok-bg: rgba(63, 125, 78, 0.1);
+  --danger: #b34324;
+  --danger-bg: rgba(179, 67, 36, 0.1);
+  --social-bg: rgba(241, 238, 230, 0.7);
+  --shadow:
+    rgba(0, 0, 0, 0.08) 0 10px 15px -3px, rgba(0, 0, 0, 0.04) 0 4px 6px -2px;
 }
 
 #root {
@@ -78,17 +76,18 @@ h3 {
   margin: 0 0 8px;
 }
 
-/* Caixa alta é só para títulos de seção que eu controlo — h3 também é
-   usado para nomes vindos do usuário (exercício, plano) e não deve virar
-   CAIXA ALTA automaticamente. */
-h1,
+/* Caixa alta é só para uma classe dedicada de rótulo de seção — h1 usa
+   texto normal (negrito já basta para hierarquia; caixa-alta grande lia
+   "pesado demais" no uso real) e h3 também é usado para nomes vindos do
+   usuário (exercício, plano) e não deve virar CAIXA ALTA automaticamente. */
 .section-title {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 h1 {
-  font-size: 24px;
+  font-size: 26px;
+  font-weight: 700;
 }
 
 h2 {

@@ -9,6 +9,8 @@ import {
   Tooltip,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { PieChart } from 'lucide-react';
+import { EmptyState } from '../../components/EmptyState';
 import { fetchBodyProgress } from './bodyApi';
 import { BODY_METRIC_FIELDS } from '../bodyMetricsFields';
 import './dashboard.css';
@@ -43,10 +45,13 @@ export function BodyDashboardPage() {
     return (
       <div className="dashboard-page-wrap">
         <h1>Evolução corporal</h1>
-        <div className="dashboard-page empty">
-          <p>Ainda não há relatórios de composição corporal registrados.</p>
-          <p>Registre um relatório na tela Admin (manual ou via importação de JSON) para ver sua evolução aqui.</p>
-        </div>
+        <EmptyState
+          icon={<PieChart size={34} />}
+          title="Ainda não há relatórios corporais"
+          description="Registre seu primeiro relatório de composição corporal (manual ou por importação de JSON) para acompanhar sua evolução."
+          actionLabel="Registrar em Configuração"
+          actionTo="/admin/body-report"
+        />
       </div>
     );
   }

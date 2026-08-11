@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -28,7 +28,9 @@ type Mode = 'login' | 'signup' | 'forgot';
 
 export function LoginPage() {
   const { session, signIn, signUp, sendPasswordReset, resendConfirmationEmail } = useAuth();
-  const [mode, setMode] = useState<Mode>('login');
+  const [searchParams] = useSearchParams();
+  const inviteEmail = searchParams.get('convite');
+  const [mode, setMode] = useState<Mode>(inviteEmail ? 'signup' : 'login');
   const [formError, setFormError] = useState<string | null>(null);
   const [signupDone, setSignupDone] = useState(false);
   const [forgotDone, setForgotDone] = useState(false);
@@ -36,7 +38,10 @@ export function LoginPage() {
   const [resendDone, setResendDone] = useState(false);
 
   const loginForm = useForm<LoginForm>({ resolver: zodResolver(loginSchema) });
-  const signupForm = useForm<SignupForm>({ resolver: zodResolver(signupSchema) });
+  const signupForm = useForm<SignupForm>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: inviteEmail ? { email: inviteEmail } : undefined,
+  });
   const forgotForm = useForm<ForgotForm>({ resolver: zodResolver(forgotSchema) });
 
   if (session) {
@@ -183,6 +188,9 @@ export function LoginPage() {
           </form>
         ) : (
           <form onSubmit={onSignup} noValidate autoComplete="off">
+            {inviteEmail && (
+              <p className="auth-hint">Você foi convidado(a) para o Personal Gym Control — crie sua conta abaixo.</p>
+            )}
             <label>
               Nome
               <input autoComplete="off" {...signupForm.register('displayName')} />

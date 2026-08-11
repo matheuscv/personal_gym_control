@@ -6,6 +6,7 @@ import * as Sentry from '@sentry/react'
 import './index.css'
 import App from './App.tsx'
 import { AuthProvider } from './features/auth/AuthProvider.tsx'
+import { ThemeProvider } from './features/theme/ThemeProvider.tsx'
 import { initSentry } from './lib/sentry.ts'
 
 initSentry()
@@ -30,11 +31,13 @@ createRoot(document.getElementById('root')!).render(
       }
     >
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <AuthProvider>
-            <App />
-          </AuthProvider>
-        </BrowserRouter>
+        <ThemeProvider>
+          <BrowserRouter>
+            <AuthProvider>
+              <App />
+            </AuthProvider>
+          </BrowserRouter>
+        </ThemeProvider>
       </QueryClientProvider>
     </Sentry.ErrorBoundary>
   </StrictMode>,

@@ -2,6 +2,8 @@ import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { LoginPage } from './features/auth/LoginPage';
 import { ResetPasswordPage } from './features/auth/ResetPasswordPage';
+import { AccountPage } from './features/auth/AccountPage';
+import { InvitePage } from './features/auth/InvitePage';
 import { ProtectedRoute } from './features/auth/ProtectedRoute';
 import { AppShell } from './components/AppShell';
 import { HomePage } from './pages/HomePage';
@@ -53,6 +55,8 @@ function App() {
             <Route path="/treino" element={<DailyWorkoutPage />} />
             <Route path="/evolucao" element={<DashboardPage />} />
             <Route path="/evolucao-corporal" element={<BodyDashboardPage />} />
+            <Route path="/conta" element={<AccountPage />} />
+            <Route path="/convidar" element={<InvitePage />} />
             {AdminLayout &&
               ExercisesPage &&
               PlansPage &&

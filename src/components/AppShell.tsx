@@ -1,8 +1,8 @@
-import { NavLink, Outlet } from 'react-router-dom';
-import { useAuth } from '../features/auth/auth-context';
+import { Link, NavLink, Outlet } from 'react-router-dom';
+import { Dumbbell } from 'lucide-react';
+import { ThemeToggle } from '../features/theme/ThemeToggle';
+import { UserMenu } from './UserMenu';
 import './AppShell.css';
-
-const IS_ANDROID = import.meta.env.VITE_PLATFORM === 'android';
 
 const NAV_ITEMS: { to: string; label: string; end?: boolean }[] = [
   { to: '/', label: 'Home', end: true },
@@ -12,18 +12,17 @@ const NAV_ITEMS: { to: string; label: string; end?: boolean }[] = [
 ];
 
 export function AppShell() {
-  const { user, signOut } = useAuth();
-
   return (
     <div className="app-shell">
       <div className="app-header-sticky">
         <header className="app-topbar">
-          <span className="app-eyebrow">Personal Gym Control</span>
-          <div className="app-topbar-user">
-            <span className="app-user-email">{user?.email}</span>
-            <button type="button" onClick={() => signOut()}>
-              Sair
-            </button>
+          <Link to="/" className="app-brand">
+            <Dumbbell size={22} />
+            <span>Personal Gym Control</span>
+          </Link>
+          <div className="app-topbar-controls">
+            <ThemeToggle />
+            <UserMenu />
           </div>
         </header>
         <nav className="app-nav">
@@ -37,11 +36,6 @@ export function AppShell() {
               {item.label}
             </NavLink>
           ))}
-          {!IS_ANDROID && (
-            <NavLink to="/admin" className={({ isActive }) => (isActive ? 'active' : '')}>
-              Admin
-            </NavLink>
-          )}
         </nav>
       </div>
       <main className="app-content">

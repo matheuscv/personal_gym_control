@@ -22,34 +22,48 @@
   border-bottom: 1px solid var(--border);
 }
 
-.app-eyebrow {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--heading);
+  font-weight: 800;
+  font-size: 19px;
+  color: var(--text-h);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.app-brand svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.app-brand:hover {
   color: var(--accent);
 }
 
-.app-topbar-user {
+.app-topbar-controls {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 13px;
-  color: var(--text);
+  gap: 10px;
 }
 
-.app-topbar-user button {
-  font: inherit;
-  padding: 6px 14px;
-  border-radius: 6px;
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   border: 1px solid var(--border);
-  background: transparent;
+  background: var(--panel);
   color: var(--text-h);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.app-topbar-user button:hover {
+.theme-toggle:hover {
   border-color: var(--accent-border);
   color: var(--accent);
 }

@@ -1,0 +1,116 @@
+.account-page {
+  flex-grow: 1;
+  padding: 24px 20px 40px;
+  max-width: 520px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.account-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  margin-bottom: 20px;
+}
+
+.account-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.account-card label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.account-card input {
+  font: inherit;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.account-card input:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.account-hint {
+  color: var(--text);
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.field-error {
+  color: var(--danger);
+  font-size: 12.5px;
+}
+
+.account-error {
+  color: var(--danger);
+  font-size: 14px;
+  margin: 0;
+}
+
+.account-success {
+  color: var(--ok);
+  font-size: 14px;
+  margin: 0;
+}
+
+.account-card button[type='submit'] {
+  align-self: flex-start;
+  font: inherit;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.account-card button[type='submit']:hover {
+  filter: brightness(1.08);
+}
+
+.account-card button[type='submit']:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+}
+
+.password-input-wrapper input {
+  flex-grow: 1;
+  padding-right: 40px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.password-toggle:hover {
+  color: var(--accent);
+}

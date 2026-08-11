@@ -4,7 +4,7 @@ import './admin.css';
 export function AdminLayout() {
   return (
     <section className="admin-page">
-      <h1>Admin</h1>
+      <h1>Configuração</h1>
       <nav className="admin-nav">
         <NavLink to="/admin/exercises" className={({ isActive }) => (isActive ? 'active' : '')}>
           Exercícios

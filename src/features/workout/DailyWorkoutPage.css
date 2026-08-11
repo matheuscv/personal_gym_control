@@ -6,11 +6,6 @@
   width: 100%;
 }
 
-.daily-workout.empty {
-  text-align: center;
-  color: var(--text);
-}
-
 .daily-workout h1 {
   margin-bottom: 18px;
 }
