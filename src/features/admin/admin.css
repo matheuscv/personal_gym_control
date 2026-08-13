@@ -7,21 +7,56 @@
   width: 100%;
 }
 
+.admin-page-header {
+  margin-bottom: 24px;
+}
+
+.admin-eyebrow {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.admin-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-size: 28px;
+}
+
+.admin-title svg {
+  flex-shrink: 0;
+  padding: 6px;
+  box-sizing: content-box;
+  width: 22px;
+  height: 22px;
+  border-radius: 10px;
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
 .admin-nav {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
 }
 
 .admin-nav a {
   color: var(--text);
   text-decoration: none;
   font-family: var(--heading);
-  font-size: 12px;
+  font-size: 12.5px;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  padding: 8px 14px;
+  padding: 9px 16px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--panel);
@@ -32,6 +67,7 @@
   background: var(--accent-bg);
   border-color: var(--accent-border);
   color: var(--accent);
+  font-weight: 600;
 }
 
 .admin-nav a:hover:not(.active) {
@@ -81,6 +117,101 @@
 .admin-error {
   color: var(--danger);
   font-size: 14px;
+}
+
+.admin-status {
+  color: var(--text);
+  font-size: 14px;
+}
+
+/* Botões reutilizados pelas telas admin redesenhadas (Meu Treino, Planos,
+   Importar Plano, Criar Plano, detalhe do Plano). */
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--heading);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 13px;
+  padding: 12px 20px;
+  border-radius: 10px;
+  border: none;
+  background: var(--accent);
+  color: var(--bg);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: inherit;
+  font-size: 13px;
+  padding: 12px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-ghost:hover {
+  border-color: var(--accent-border);
+  color: var(--text-h);
+}
+
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-icon:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.btn-icon.neutral:hover {
+  border-color: var(--accent-border);
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.btn-icon:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary:hover:not(:disabled) {
+    transform: none;
+  }
 }
 
 .admin-table {
@@ -213,3 +344,7 @@
   font-weight: 600;
   cursor: pointer;
 }
+
+/* O layout completo de "Criar plano" (biblioteca + painel de montagem) tem
+   estilo próprio e rico o suficiente para merecer arquivo dedicado — ver
+   CreatePlanPage.css, no mesmo padrão de DailyWorkoutPage.css. */

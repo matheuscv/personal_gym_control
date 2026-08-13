@@ -1,26 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Dumbbell } from 'lucide-react';
+import { CalendarOff, PlayCircle } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { EmptyState } from '../../components/EmptyState';
-import { fetchActivePlans, loadDailyWorkout, updateSessionSet } from './api';
+import { fetchTodayScheduledPlan, loadDailyWorkout, updateSessionSet } from './api';
 import { enqueuePatch, flushQueue, getQueuedCount } from './offlineQueue';
 import type { SessionSet, SessionSetPatch } from './types';
 import './DailyWorkoutPage.css';
 
 export function DailyWorkoutPage() {
-  const plansQuery = useQuery({ queryKey: ['active-plans'], queryFn: fetchActivePlans });
-  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (selectedPlanId == null && plansQuery.data && plansQuery.data.length > 0) {
-      setSelectedPlanId(plansQuery.data[0].id);
-    }
-  }, [plansQuery.data, selectedPlanId]);
+  const todayQuery = useQuery({ queryKey: ['today-scheduled-plan'], queryFn: fetchTodayScheduledPlan });
+  const planId = todayQuery.data?.plan_id ?? null;
 
   const workoutQuery = useQuery({
-    queryKey: ['daily-workout', selectedPlanId],
-    queryFn: () => loadDailyWorkout(selectedPlanId!),
-    enabled: selectedPlanId != null,
+    queryKey: ['daily-workout', planId],
+    queryFn: () => loadDailyWorkout(planId!),
+    enabled: planId != null,
   });
 
   const queryClient = useQueryClient();
@@ -37,9 +31,9 @@ export function DailyWorkoutPage() {
     const { succeeded } = await flushQueue(updateSessionSet);
     setQueuedCount(getQueuedCount());
     if (succeeded > 0) {
-      queryClient.invalidateQueries({ queryKey: ['daily-workout', selectedPlanId] });
+      queryClient.invalidateQueries({ queryKey: ['daily-workout', planId] });
     }
-  }, [queryClient, selectedPlanId]);
+  }, [queryClient, planId]);
 
   useEffect(() => {
     syncQueue();
@@ -93,25 +87,25 @@ export function DailyWorkoutPage() {
     }
   }
 
-  if (plansQuery.isLoading) {
+  if (todayQuery.isLoading) {
     return (
       <div className="daily-workout">
         <h1>Treino do dia</h1>
-        <p className="workout-status">Carregando planos...</p>
+        <p className="workout-status">Carregando...</p>
       </div>
     );
   }
 
-  if (!plansQuery.data || plansQuery.data.length === 0) {
+  if (!todayQuery.data) {
     return (
       <div className="daily-workout empty">
         <h1>Treino do dia</h1>
         <EmptyState
-          icon={<Dumbbell size={34} />}
-          title="Nenhum treino por aqui ainda"
-          description="Crie um plano de treino para começar a registrar suas séries do dia a dia."
-          actionLabel="Criar plano em Configuração"
-          actionTo="/admin/plans"
+          icon={<CalendarOff size={34} />}
+          title="Nenhum treino agendado para hoje"
+          description="Configure sua agenda semanal em Configuração → Meu Treino para escolher qual plano treinar em cada dia."
+          actionLabel="Configurar Meu Treino"
+          actionTo="/admin/schedule"
         />
       </div>
     );
@@ -120,6 +114,7 @@ export function DailyWorkoutPage() {
   return (
     <div className="daily-workout">
       <h1>Treino do dia</h1>
+      <p className="workout-plan-label">{todayQuery.data.plan_name}</p>
       {(isOffline || queuedCount > 0) && (
         <p className="offline-banner">
           {isOffline
@@ -127,18 +122,6 @@ export function DailyWorkoutPage() {
             : `Sincronizando ${queuedCount} alteração${queuedCount > 1 ? 'ões' : ''} pendente${queuedCount > 1 ? 's' : ''}...`}
         </p>
       )}
-      <div className="plan-tabs">
-        {plansQuery.data.map((plan) => (
-          <button
-            key={plan.id}
-            type="button"
-            className={plan.id === selectedPlanId ? 'active' : ''}
-            onClick={() => setSelectedPlanId(plan.id)}
-          >
-            {plan.name}
-          </button>
-        ))}
-      </div>
 
       {workoutQuery.isLoading && <p className="workout-status">Carregando treino do dia...</p>}
       {workoutQuery.isError && <p className="workout-error">Erro ao carregar o treino.</p>}
@@ -154,6 +137,16 @@ export function DailyWorkoutPage() {
               <div className="exercise-header">
                 <h3>{pe.exercise_name}</h3>
                 {pe.muscle_group && <span className="muscle-group">{pe.muscle_group}</span>}
+                <a
+                  className="video-link"
+                  href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${pe.exercise_name} execução correta`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Ver vídeo de ${pe.exercise_name} no YouTube`}
+                >
+                  <PlayCircle size={15} />
+                  Vídeo
+                </a>
               </div>
               {pe.target_reps && <p className="target-reps">Alvo: {pe.target_reps} reps</p>}
 

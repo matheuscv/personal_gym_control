@@ -13,6 +13,23 @@ export async function fetchActivePlans(): Promise<WorkoutPlan[]> {
   return data;
 }
 
+interface TodayScheduleRow {
+  plan_id: number;
+  workout_plans: { name: string } | null;
+}
+
+export async function fetchTodayScheduledPlan(): Promise<{ plan_id: number; plan_name: string } | null> {
+  const dayOfWeek = new Date().getDay();
+  const { data, error } = await supabase
+    .from('workout_weekly_schedule')
+    .select('plan_id, workout_plans (name)')
+    .eq('day_of_week', dayOfWeek)
+    .maybeSingle<TodayScheduleRow>();
+  if (error) throw error;
+  if (!data) return null;
+  return { plan_id: data.plan_id, plan_name: data.workout_plans?.name ?? 'Plano' };
+}
+
 interface PlanExerciseRow {
   id: number;
   order_index: number;

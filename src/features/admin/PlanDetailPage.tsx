@@ -1,6 +1,7 @@
-import { type FormEvent, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
 import {
   addExerciseToPlan,
   fetchExercises,
@@ -9,7 +10,11 @@ import {
   removePlanExercise,
   swapPlanExerciseOrder,
   updatePlanExercise,
+  upsertExerciseByName,
 } from './api';
+import { ExerciseLibraryPicker } from './ExerciseLibraryPicker';
+import { EXERCISE_LIBRARY } from './exerciseLibrary';
+import './PlanDetailPage.css';
 
 export function PlanDetailPage() {
   const { planId } = useParams<{ planId: string }>();
@@ -23,26 +28,54 @@ export function PlanDetailPage() {
   });
   const exercisesQuery = useQuery({ queryKey: ['admin-exercises'], queryFn: fetchExercises });
 
-  const [exerciseId, setExerciseId] = useState('');
-  const [targetSets, setTargetSets] = useState('3');
-  const [targetReps, setTargetReps] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ['admin-plan-exercises', id] });
+    queryClient.invalidateQueries({ queryKey: ['admin-exercises'] });
     queryClient.invalidateQueries({ queryKey: ['daily-workout'] });
   }
 
   const addMutation = useMutation({
-    mutationFn: addExerciseToPlan,
-    onSuccess: () => {
-      invalidate();
-      setExerciseId('');
-      setTargetSets('3');
-      setTargetReps('');
+    mutationFn: async (input: { muscle_group: string; name: string; target_sets: number; target_reps: string }) => {
+      const exercise = await upsertExerciseByName({ name: input.name, muscle_group: input.muscle_group });
+      await addExerciseToPlan({
+        plan_id: id,
+        exercise_id: exercise.id,
+        target_sets: input.target_sets,
+        target_reps: input.target_reps,
+      });
     },
+    onSuccess: invalidate,
     onError: (err: Error) => setError(err.message),
   });
+
+  const existingNames = useMemo(
+    () => new Set((planExercisesQuery.data ?? []).map((item) => item.exercise_name)),
+    [planExercisesQuery.data]
+  );
+
+  const libraryNames = useMemo(
+    () => new Set(EXERCISE_LIBRARY.flatMap((group) => group.exercises.map((ex) => ex.name))),
+    []
+  );
+
+  const myExercisesGroup = useMemo(() => {
+    const mine = (exercisesQuery.data ?? []).filter((ex) => !libraryNames.has(ex.name));
+    if (mine.length === 0) return undefined;
+    return [
+      {
+        muscle_group: 'Meus exercícios',
+        exercises: mine.map((ex) => ({ name: ex.name, target_sets: 3, target_reps: '' })),
+      },
+    ];
+  }, [exercisesQuery.data, libraryNames]);
+
+  function handlePickExercise(muscleGroup: string, name: string, targetSets: number, targetReps: string) {
+    if (existingNames.has(name)) return;
+    setError(null);
+    addMutation.mutate({ muscle_group: muscleGroup, name, target_sets: targetSets, target_reps: targetReps });
+  }
 
   const removeMutation = useMutation({ mutationFn: removePlanExercise, onSuccess: invalidate });
 
@@ -57,62 +90,51 @@ export function PlanDetailPage() {
     onSuccess: invalidate,
   });
 
-  function handleAdd(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    if (!exerciseId) {
-      setError('Selecione um exercício.');
-      return;
-    }
-    addMutation.mutate({
-      plan_id: id,
-      exercise_id: Number(exerciseId),
-      target_sets: targetSets ? Number(targetSets) : null,
-      target_reps: targetReps.trim() || null,
-    });
-  }
-
   const items = planExercisesQuery.data ?? [];
 
   return (
-    <div className="admin-section">
-      <h2>{planQuery.data?.name ?? 'Plano'}</h2>
+    <div className="admin-section plan-detail-page">
+      <span className="plan-detail-eyebrow">Editando plano</span>
+      <h2 className="section-title">{planQuery.data?.name ?? 'Plano'}</h2>
 
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th>Ordem</th>
-            <th>Exercício</th>
-            <th>Séries alvo</th>
-            <th>Reps alvo</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
+      {!planExercisesQuery.isLoading && items.length === 0 && (
+        <p className="library-empty">Este plano ainda não tem exercícios. Adicione um na biblioteca abaixo.</p>
+      )}
+
+      {items.length > 0 && (
+        <ul className="plan-exercise-list">
           {items.map((item, index) => (
-            <tr key={item.id}>
-              <td>
+            <li key={item.id} className="plan-exercise-item">
+              <div className="plan-exercise-order">
                 <button
                   type="button"
+                  className="btn-icon neutral"
                   disabled={index === 0}
+                  aria-label="Mover para cima"
                   onClick={() => swapMutation.mutate([item, items[index - 1]])}
                 >
-                  ↑
+                  <ChevronUp size={14} />
                 </button>
+                <span className="plan-exercise-index">{index + 1}</span>
                 <button
                   type="button"
+                  className="btn-icon neutral"
                   disabled={index === items.length - 1}
+                  aria-label="Mover para baixo"
                   onClick={() => swapMutation.mutate([item, items[index + 1]])}
                 >
-                  ↓
+                  <ChevronDown size={14} />
                 </button>
-              </td>
-              <td>{item.exercise_name}</td>
-              <td>
+              </div>
+
+              <span className="plan-exercise-name">{item.exercise_name}</span>
+
+              <div className="plan-exercise-controls">
                 <input
                   type="number"
                   min={0}
                   defaultValue={item.target_sets ?? ''}
+                  aria-label="Séries alvo"
                   onBlur={(e) =>
                     updateMutation.mutate({
                       id: item.id,
@@ -121,11 +143,12 @@ export function PlanDetailPage() {
                     })
                   }
                 />
-              </td>
-              <td>
+                <span className="plan-exercise-x">×</span>
                 <input
+                  type="text"
                   defaultValue={item.target_reps ?? ''}
-                  placeholder="ex: 8-12"
+                  placeholder="8-12"
+                  aria-label="Reps alvo"
                   onBlur={(e) =>
                     updateMutation.mutate({
                       id: item.id,
@@ -134,43 +157,33 @@ export function PlanDetailPage() {
                     })
                   }
                 />
-              </td>
-              <td>
-                <button type="button" onClick={() => removeMutation.mutate(item.id)}>
-                  Remover
+                <button
+                  type="button"
+                  className="btn-icon"
+                  aria-label={`Remover ${item.exercise_name}`}
+                  onClick={() => removeMutation.mutate(item.id)}
+                >
+                  <Trash2 size={14} />
                 </button>
-              </td>
-            </tr>
+              </div>
+            </li>
           ))}
-        </tbody>
-      </table>
+        </ul>
+      )}
 
-      <form className="admin-form" onSubmit={handleAdd}>
-        <select value={exerciseId} onChange={(e) => setExerciseId(e.target.value)}>
-          <option value="">Selecione um exercício...</option>
-          {exercisesQuery.data?.map((exercise) => (
-            <option key={exercise.id} value={exercise.id}>
-              {exercise.name}
-            </option>
-          ))}
-        </select>
-        <input
-          type="number"
-          min={0}
-          placeholder="Séries"
-          value={targetSets}
-          onChange={(e) => setTargetSets(e.target.value)}
-        />
-        <input
-          placeholder="Reps alvo (ex: 8-12)"
-          value={targetReps}
-          onChange={(e) => setTargetReps(e.target.value)}
-        />
-        <button type="submit" disabled={addMutation.isPending}>
-          Adicionar ao plano
-        </button>
-      </form>
+      <h3 className="plan-detail-subheading">Adicionar exercício ao plano</h3>
+      <p className="import-hint">
+        Escolha um exercício da biblioteca (ou de "Meus exercícios") para adicionar ao plano com os valores
+        padrão de séries/repetições — depois ajuste na lista acima se quiser.
+      </p>
+      {addMutation.isPending && <p className="admin-status">Adicionando...</p>}
       {error && <p className="admin-error">{error}</p>}
+
+      <ExerciseLibraryPicker
+        selectedNames={existingNames}
+        onSelect={handlePickExercise}
+        extraGroups={myExercisesGroup}
+      />
     </div>
   );
 }

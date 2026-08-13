@@ -1,0 +1,273 @@
+.create-plan {
+  flex-grow: 1;
+  padding: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.create-plan-header {
+  margin-bottom: 24px;
+}
+
+.create-plan-eyebrow {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.create-plan-hint {
+  color: var(--text);
+  font-size: 14px;
+  max-width: 60ch;
+  margin-top: 8px;
+  line-height: 1.6;
+}
+
+.create-plan-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .create-plan-layout {
+    grid-template-columns: 1fr 360px;
+  }
+}
+
+/* Estilos da biblioteca de exercícios (busca, acordeões, chips) ficam em
+   ExercisePicker.css — compartilhados com o "Adicionar exercício" da tela
+   de detalhe do plano (PlanDetailPage). */
+
+/* Painel do plano em construção */
+
+.plan-builder-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (min-width: 900px) {
+  .plan-builder-panel {
+    position: sticky;
+    top: 20px;
+  }
+}
+
+.plan-name-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.plan-name-field > span {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text);
+}
+
+.plan-name-field input {
+  font-family: var(--heading);
+  font-weight: 600;
+  font-size: 17px;
+  padding: 8px 0 10px;
+  border: none;
+  border-bottom: 2px solid var(--border);
+  background: transparent;
+  color: var(--text-h);
+  transition: border-color 0.15s ease;
+}
+
+.plan-name-field input:focus {
+  outline: none;
+  border-bottom-color: var(--accent);
+}
+
+.plan-name-field input::placeholder {
+  color: var(--text);
+  font-weight: 400;
+}
+
+.plan-builder-list-wrap {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.plan-builder-list-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+}
+
+.plan-builder-badge {
+  margin-left: auto;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 2px 9px;
+  border-radius: 20px;
+}
+
+.plan-builder-empty {
+  color: var(--text);
+  font-size: 13px;
+  padding: 20px 12px;
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  line-height: 1.5;
+}
+
+.plan-builder-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.plan-builder-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--panel-2);
+  border-radius: 10px;
+  padding: 9px 10px;
+}
+
+.plan-builder-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.plan-builder-item-name {
+  font-size: 13px;
+  color: var(--text-h);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.plan-builder-item-group {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--text);
+}
+
+.plan-builder-item-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.plan-builder-item-controls input[type='number'] {
+  width: 34px;
+  font-family: var(--mono);
+  font-size: 12px;
+  text-align: center;
+  padding: 5px 2px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.plan-builder-x {
+  color: var(--text);
+  font-size: 11px;
+}
+
+.plan-builder-item-controls input[type='text'] {
+  width: 58px;
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 5px 4px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.plan-builder-item-controls input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.plan-builder-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.plan-builder-remove:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.plan-builder-submit {
+  font-family: var(--heading);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 13.5px;
+  padding: 14px;
+  border-radius: 10px;
+  border: none;
+  background: var(--accent);
+  color: var(--bg);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.plan-builder-submit:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.plan-builder-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-builder-submit:hover:not(:disabled) {
+    transform: none;
+  }
+}

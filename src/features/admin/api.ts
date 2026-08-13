@@ -10,19 +10,17 @@ export async function fetchExercises(): Promise<Exercise[]> {
   return data;
 }
 
-export async function createExercise(input: {
+export async function upsertExerciseByName(input: {
   name: string;
   muscle_group: string | null;
-  notes: string | null;
 }): Promise<Exercise> {
-  const { data, error } = await supabase.from('exercises').insert(input).select().single();
+  const { data, error } = await supabase
+    .from('exercises')
+    .upsert(input, { onConflict: 'owner_id,name' })
+    .select('id, name, muscle_group, notes')
+    .single();
   if (error) throw error;
   return data;
-}
-
-export async function deleteExercise(id: number): Promise<void> {
-  const { error } = await supabase.from('exercises').delete().eq('id', id);
-  if (error) throw error;
 }
 
 export async function fetchPlans(): Promise<Plan[]> {
@@ -36,16 +34,6 @@ export async function fetchPlan(id: number): Promise<Plan> {
     .from('workout_plans')
     .select('id, name, is_active')
     .eq('id', id)
-    .single();
-  if (error) throw error;
-  return data;
-}
-
-export async function createPlan(input: { name: string }): Promise<Plan> {
-  const { data, error } = await supabase
-    .from('workout_plans')
-    .insert({ name: input.name, is_active: true })
-    .select()
     .single();
   if (error) throw error;
   return data;

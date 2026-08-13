@@ -1,28 +1,17 @@
-import { type FormEvent, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createPlan, deletePlan, fetchPlans, updatePlan } from './api';
+import { Link } from 'react-router-dom';
+import { ClipboardList, Trash2 } from 'lucide-react';
+import { deletePlan, fetchPlans, updatePlan } from './api';
+import './PlansPage.css';
 
 export function PlansPage() {
   const queryClient = useQueryClient();
   const plansQuery = useQuery({ queryKey: ['admin-plans'], queryFn: fetchPlans });
 
-  const [name, setName] = useState('');
-  const [error, setError] = useState<string | null>(null);
-
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ['admin-plans'] });
     queryClient.invalidateQueries({ queryKey: ['active-plans'] });
   }
-
-  const createMutation = useMutation({
-    mutationFn: createPlan,
-    onSuccess: () => {
-      invalidate();
-      setName('');
-    },
-    onError: (err: Error) => setError(err.message),
-  });
 
   const toggleActiveMutation = useMutation({
     mutationFn: (input: { id: number; is_active: boolean }) =>
@@ -35,60 +24,56 @@ export function PlansPage() {
     onSuccess: invalidate,
   });
 
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    if (!name.trim()) {
-      setError('Informe o nome do plano.');
-      return;
-    }
-    createMutation.mutate({ name: name.trim() });
-  }
+  const plans = plansQuery.data ?? [];
 
   return (
-    <div className="admin-section">
+    <div className="admin-section plans-page">
+      <span className="plans-eyebrow">Seus planos</span>
       <h2 className="section-title">Planos</h2>
+      <p className="import-hint">
+        Planos criados em "Criar Plano" ou importados via JSON aparecem todos aqui. Desative um plano pra
+        tirá-lo das sugestões sem apagar o histórico.
+      </p>
 
-      <form className="admin-form" onSubmit={handleSubmit}>
-        <input placeholder="Nome (ex: Treino A)" value={name} onChange={(e) => setName(e.target.value)} />
-        <button type="submit" disabled={createMutation.isPending}>
-          Adicionar
-        </button>
-      </form>
-      {error && <p className="admin-error">{error}</p>}
+      {plansQuery.isLoading && <p className="admin-status">Carregando...</p>}
 
-      {plansQuery.isLoading && <p>Carregando...</p>}
+      {!plansQuery.isLoading && plans.length === 0 && (
+        <p className="library-empty">
+          Nenhum plano ainda. Crie um do zero em "Criar Plano" ou importe um JSON.
+        </p>
+      )}
 
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th>Nome</th>
-            <th>Ativo</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {plansQuery.data?.map((plan) => (
-            <tr key={plan.id}>
-              <td>
-                <Link to={`/admin/plans/${plan.id}`}>{plan.name}</Link>
-              </td>
-              <td>
+      <ul className="plans-list">
+        {plans.map((plan) => (
+          <li key={plan.id} className="plan-card">
+            <Link to={`/admin/plans/${plan.id}`} className="plan-card-name">
+              <ClipboardList size={16} />
+              {plan.name}
+            </Link>
+            <div className="plan-card-actions">
+              <label className="plan-toggle">
                 <input
                   type="checkbox"
                   checked={plan.is_active}
                   onChange={(e) => toggleActiveMutation.mutate({ id: plan.id, is_active: e.target.checked })}
                 />
-              </td>
-              <td>
-                <button type="button" onClick={() => deleteMutation.mutate(plan.id)}>
-                  Remover
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                <span className="plan-toggle-track">
+                  <span className="plan-toggle-thumb" />
+                </span>
+                <span className="plan-toggle-label">{plan.is_active ? 'Ativo' : 'Inativo'}</span>
+              </label>
+              <button
+                type="button"
+                className="btn-icon"
+                aria-label={`Remover ${plan.name}`}
+                onClick={() => deleteMutation.mutate(plan.id)}
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

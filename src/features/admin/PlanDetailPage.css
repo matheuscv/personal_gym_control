@@ -1,0 +1,103 @@
+.plan-detail-eyebrow {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.plan-detail-subheading {
+  margin-top: 4px;
+}
+
+.plan-exercise-list {
+  list-style: none;
+  margin: 18px 0 32px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 640px;
+}
+
+.plan-exercise-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.plan-exercise-order {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.plan-exercise-order .btn-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.plan-exercise-index {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text);
+}
+
+.plan-exercise-name {
+  flex: 1;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-h);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plan-exercise-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.plan-exercise-controls input[type='number'] {
+  width: 44px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  text-align: center;
+  padding: 6px 4px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.plan-exercise-controls input[type='text'] {
+  width: 76px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  padding: 6px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.plan-exercise-controls input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.plan-exercise-x {
+  color: var(--text);
+  font-size: 11px;
+}

@@ -1,0 +1,119 @@
+.plans-eyebrow {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.plans-page .import-hint {
+  margin-bottom: 20px;
+}
+
+.plans-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 560px;
+}
+
+.plan-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  transition: border-color 0.15s ease;
+}
+
+.plan-card:hover {
+  border-color: var(--accent-border);
+}
+
+.plan-card-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--heading);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-h);
+  text-decoration: none;
+  min-width: 0;
+}
+
+.plan-card-name svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.plan-card-name:hover {
+  color: var(--accent);
+}
+
+.plan-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.plan-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.plan-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.plan-toggle-track {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  transition: all 0.15s ease;
+}
+
+.plan-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text);
+  transition: all 0.15s ease;
+}
+
+.plan-toggle input:checked + .plan-toggle-track {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.plan-toggle input:checked + .plan-toggle-track .plan-toggle-thumb {
+  transform: translateX(16px);
+  background: var(--bg);
+}
+
+.plan-toggle-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text);
+  min-width: 40px;
+}
