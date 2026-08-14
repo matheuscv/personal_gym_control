@@ -13,6 +13,9 @@ export function AdminLayout() {
         </h1>
       </header>
       <nav className="admin-nav">
+        <NavLink to="/admin/goal" className={({ isActive }) => (isActive ? 'active' : '')}>
+          Meu Objetivo
+        </NavLink>
         <NavLink to="/admin/schedule" className={({ isActive }) => (isActive ? 'active' : '')}>
           Meu Treino
         </NavLink>
@@ -26,10 +29,13 @@ export function AdminLayout() {
           Criar Plano
         </NavLink>
         <NavLink to="/admin/body-report" end className={({ isActive }) => (isActive ? 'active' : '')}>
-          Relatório Corporal
+          Relatórios
         </NavLink>
         <NavLink to="/admin/body-report/import" className={({ isActive }) => (isActive ? 'active' : '')}>
           Importar Relatório
+        </NavLink>
+        <NavLink to="/admin/body-report/create" className={({ isActive }) => (isActive ? 'active' : '')}>
+          Criar Relatório
         </NavLink>
       </nav>
       <Outlet />

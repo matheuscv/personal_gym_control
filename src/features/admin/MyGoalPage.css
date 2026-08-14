@@ -1,0 +1,77 @@
+.my-goal-eyebrow {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.my-goal-page .import-hint {
+  margin-bottom: 20px;
+}
+
+.my-goal-form {
+  max-width: 360px;
+}
+
+.my-goal-age {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text);
+  margin: -8px 0 0;
+}
+
+.my-goal-age strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.my-goal-info {
+  margin-top: 32px;
+  max-width: 380px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 20px;
+}
+
+.my-goal-info-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  margin-bottom: 14px;
+}
+
+.my-goal-info-header svg {
+  color: var(--accent);
+}
+
+.my-goal-info-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.my-goal-info-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.my-goal-info-list strong {
+  font-family: var(--mono);
+  color: var(--accent);
+  font-size: 14px;
+}

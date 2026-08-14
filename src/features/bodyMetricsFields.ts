@@ -20,7 +20,6 @@ export const BODY_METRIC_FIELDS: BodyMetricField[] = [
   { key: 'idade_corporal', label: 'Idade corporal', unit: 'anos' },
   { key: 'whr', label: 'WHR (cintura-quadril)', unit: '' },
   { key: 'peso_alvo_kg', label: 'Peso-alvo', unit: 'kg' },
-  { key: 'peso_ideal_kg', label: 'Peso ideal', unit: 'kg' },
   { key: 'controle_peso_kg', label: 'Controle de peso', unit: 'kg' },
   { key: 'grau_obesidade_pct', label: 'Grau de obesidade', unit: '%' },
 ];

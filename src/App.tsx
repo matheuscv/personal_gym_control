@@ -22,6 +22,9 @@ const IS_ANDROID = import.meta.env.VITE_PLATFORM === 'android';
 const AdminLayout = IS_ANDROID
   ? null
   : lazy(() => import('./features/admin/AdminLayout').then((m) => ({ default: m.AdminLayout })));
+const MyGoalPage = IS_ANDROID
+  ? null
+  : lazy(() => import('./features/admin/MyGoalPage').then((m) => ({ default: m.MyGoalPage })));
 const MySchedulePage = IS_ANDROID
   ? null
   : lazy(() => import('./features/admin/MySchedulePage').then((m) => ({ default: m.MySchedulePage })));
@@ -40,6 +43,11 @@ const CreatePlanPage = IS_ANDROID
 const BodyReportPage = IS_ANDROID
   ? null
   : lazy(() => import('./features/admin/BodyReportPage').then((m) => ({ default: m.BodyReportPage })));
+const CreateBodyReportPage = IS_ANDROID
+  ? null
+  : lazy(() =>
+      import('./features/admin/CreateBodyReportPage').then((m) => ({ default: m.CreateBodyReportPage }))
+    );
 const ImportBodyReportPage = IS_ANDROID
   ? null
   : lazy(() =>
@@ -61,21 +69,25 @@ function App() {
             <Route path="/conta" element={<AccountPage />} />
             <Route path="/convidar" element={<InvitePage />} />
             {AdminLayout &&
+              MyGoalPage &&
               MySchedulePage &&
               PlansPage &&
               PlanDetailPage &&
               ImportPlanPage &&
               CreatePlanPage &&
               BodyReportPage &&
+              CreateBodyReportPage &&
               ImportBodyReportPage && (
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<Navigate to="schedule" replace />} />
+                  <Route path="goal" element={<MyGoalPage />} />
                   <Route path="schedule" element={<MySchedulePage />} />
                   <Route path="plans" element={<PlansPage />} />
                   <Route path="plans/:planId" element={<PlanDetailPage />} />
                   <Route path="import" element={<ImportPlanPage />} />
                   <Route path="create-plan" element={<CreatePlanPage />} />
                   <Route path="body-report" element={<BodyReportPage />} />
+                  <Route path="body-report/create" element={<CreateBodyReportPage />} />
                   <Route path="body-report/import" element={<ImportBodyReportPage />} />
                 </Route>
               )}

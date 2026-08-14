@@ -24,7 +24,6 @@ const bodyReportSchema = z.object({
   idade_corporal: z.number().int().positive().nullish(),
   whr: z.number().positive().nullish(),
   peso_alvo_kg: z.number().positive().nullish(),
-  peso_ideal_kg: z.number().positive().nullish(),
   controle_peso_kg: z.number().nullish(),
   grau_obesidade_pct: z.number().nullish(),
 });
