@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Eye, Save, PencilLine } from 'lucide-react';
+import { Eye, Save, PencilLine, PlayCircle, X } from 'lucide-react';
 import { useAuth } from '../auth/auth-context';
 import { importPlanSchema, type ImportPlanInput } from '../../../api/_lib/importSchema';
+import { youtubeSearchUrl } from '../../lib/youtube';
 import './ImportPlanPage.css';
 
 const EXAMPLE = `{
@@ -50,6 +51,12 @@ export function ImportPlanPage() {
     }
 
     setPreview(parsed.data);
+  }
+
+  function handleCancel() {
+    setText('');
+    setPreview(null);
+    setError(null);
   }
 
   async function handleSave() {
@@ -121,16 +128,31 @@ export function ImportPlanPage() {
                   <span className="import-preview-item-name">{ex.name}</span>
                   {ex.muscle_group && <span className="import-preview-item-group">{ex.muscle_group}</span>}
                 </div>
-                {(ex.target_sets || ex.target_reps) && (
-                  <span className="import-preview-item-target">
-                    {ex.target_sets ?? '—'} × {ex.target_reps ?? '—'}
-                  </span>
-                )}
+                <div className="import-preview-item-right">
+                  {(ex.target_sets || ex.target_reps) && (
+                    <span className="import-preview-item-target">
+                      {ex.target_sets ?? '—'} × {ex.target_reps ?? '—'}
+                    </span>
+                  )}
+                  <a
+                    className="import-preview-video"
+                    href={youtubeSearchUrl(`${ex.name} execução correta`)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Ver vídeo de ${ex.name} no YouTube`}
+                  >
+                    <PlayCircle size={14} />
+                  </a>
+                </div>
               </li>
             ))}
           </ul>
 
           <div className="import-preview-actions">
+            <button type="button" className="btn-ghost" onClick={handleCancel}>
+              <X size={15} />
+              Cancelar
+            </button>
             <button type="button" className="btn-ghost" onClick={() => setPreview(null)}>
               <PencilLine size={15} />
               Editar JSON

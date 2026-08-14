@@ -27,6 +27,7 @@ export interface SessionSet {
 
 export interface DailyWorkout {
   sessionId: number;
+  completedAt: string | null;
   planExercises: PlanExercise[];
   sets: SessionSet[];
 }

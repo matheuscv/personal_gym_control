@@ -94,11 +94,37 @@
   flex-shrink: 0;
 }
 
+.import-preview-item-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
 .import-preview-item-target {
   font-family: var(--mono);
   font-size: 12px;
   color: var(--accent-border);
   flex-shrink: 0;
+}
+
+.import-preview-video {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  transition: all 0.15s ease;
+}
+
+.import-preview-video:hover {
+  color: var(--accent);
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
 }
 
 .import-preview-actions {

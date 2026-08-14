@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { X, ClipboardList } from 'lucide-react';
+import { X, ClipboardList, PlayCircle } from 'lucide-react';
 import { useAuth } from '../auth/auth-context';
 import { importPlanSchema } from '../../../api/_lib/importSchema';
+import { youtubeSearchUrl } from '../../lib/youtube';
 import { ExerciseLibraryPicker } from './ExerciseLibraryPicker';
 import './CreatePlanPage.css';
 
@@ -154,6 +155,15 @@ export function CreatePlanPage() {
                         onChange={(e) => updateSelected(ex.name, { target_reps: e.target.value })}
                         aria-label="Repetições"
                       />
+                      <a
+                        className="plan-builder-video"
+                        href={youtubeSearchUrl(`${ex.name} execução correta`)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Ver vídeo de ${ex.name} no YouTube`}
+                      >
+                        <PlayCircle size={14} />
+                      </a>
                       <button
                         type="button"
                         className="plan-builder-remove"

@@ -1,29 +1,64 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CalendarOff, PlayCircle } from 'lucide-react';
+import { CalendarOff, CheckCircle2, ChevronLeft, ChevronRight, Flag, PlayCircle, RotateCcw } from 'lucide-react';
+import { addDays, format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { EmptyState } from '../../components/EmptyState';
-import { fetchTodayScheduledPlan, loadDailyWorkout, updateSessionSet } from './api';
+import { ProgressRing } from '../../components/ProgressRing';
+import {
+  completeSession,
+  fetchScheduledPlanForDate,
+  loadDailyWorkout,
+  reopenSession,
+  updateSessionSet,
+} from './api';
 import { enqueuePatch, flushQueue, getQueuedCount } from './offlineQueue';
 import type { SessionSet, SessionSetPatch } from './types';
+import { youtubeSearchUrl } from '../../lib/youtube';
 import './DailyWorkoutPage.css';
 
+const MAX_DAYS_BACK = 10;
+
+function dayLabel(offset: number, date: Date): string {
+  if (offset === 0) return 'Hoje';
+  if (offset === -1) return 'Ontem';
+  const weekday = format(date, 'EEEE', { locale: ptBR });
+  return `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)}, ${format(date, 'dd/MM')}`;
+}
+
 export function DailyWorkoutPage() {
-  const todayQuery = useQuery({ queryKey: ['today-scheduled-plan'], queryFn: fetchTodayScheduledPlan });
-  const planId = todayQuery.data?.plan_id ?? null;
+  const [dateOffset, setDateOffset] = useState(0);
+  const targetDate = useMemo(() => addDays(new Date(), dateOffset), [dateOffset]);
+  const dateKey = useMemo(() => format(targetDate, 'yyyy-MM-dd'), [targetDate]);
+
+  const scheduleQuery = useQuery({
+    queryKey: ['scheduled-plan', dateKey],
+    queryFn: () => fetchScheduledPlanForDate(targetDate),
+  });
+  const planId = scheduleQuery.data?.plan_id ?? null;
 
   const workoutQuery = useQuery({
-    queryKey: ['daily-workout', planId],
-    queryFn: () => loadDailyWorkout(planId!),
+    queryKey: ['daily-workout', planId, dateKey],
+    queryFn: () => loadDailyWorkout(planId!, targetDate),
     enabled: planId != null,
   });
 
   const queryClient = useQueryClient();
   const [sets, setSets] = useState<SessionSet[]>([]);
+  const [completedAt, setCompletedAt] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [queuedCount, setQueuedCount] = useState(() => getQueuedCount());
 
   useEffect(() => {
-    if (workoutQuery.data) setSets(workoutQuery.data.sets);
+    setSets([]);
+    setCompletedAt(null);
+  }, [dateOffset]);
+
+  useEffect(() => {
+    if (workoutQuery.data) {
+      setSets(workoutQuery.data.sets);
+      setCompletedAt(workoutQuery.data.completedAt);
+    }
   }, [workoutQuery.data]);
 
   const syncQueue = useCallback(async () => {
@@ -31,9 +66,9 @@ export function DailyWorkoutPage() {
     const { succeeded } = await flushQueue(updateSessionSet);
     setQueuedCount(getQueuedCount());
     if (succeeded > 0) {
-      queryClient.invalidateQueries({ queryKey: ['daily-workout', planId] });
+      queryClient.invalidateQueries({ queryKey: ['daily-workout', planId, dateKey] });
     }
-  }, [queryClient, planId]);
+  }, [queryClient, planId, dateKey]);
 
   useEffect(() => {
     syncQueue();
@@ -53,6 +88,34 @@ export function DailyWorkoutPage() {
       window.removeEventListener('offline', handleOffline);
     };
   }, [syncQueue]);
+
+  const progressPercent = useMemo(() => {
+    if (sets.length === 0) return 0;
+    const done = sets.filter((s) => s.completed).length;
+    return Math.round((done / sets.length) * 100);
+  }, [sets]);
+
+  async function handleCompleteDay() {
+    if (!workoutQuery.data) return;
+    if (progressPercent !== 100) {
+      const confirmed = window.confirm(
+        `Você concluiu ${progressPercent}% dos exercícios do dia. Deseja encerrar o dia mesmo assim?`
+      );
+      if (!confirmed) return;
+    }
+    const newCompletedAt = await completeSession(workoutQuery.data.sessionId);
+    setCompletedAt(newCompletedAt);
+    queryClient.invalidateQueries({ queryKey: ['daily-workout', planId, dateKey] });
+  }
+
+  async function handleReopenDay() {
+    if (!workoutQuery.data) return;
+    await reopenSession(workoutQuery.data.sessionId);
+    setCompletedAt(null);
+    queryClient.invalidateQueries({ queryKey: ['daily-workout', planId, dateKey] });
+  }
+
+  const isLocked = completedAt != null;
 
   const setsByExercise = useMemo(() => {
     const map = new Map<number, SessionSet[]>();
@@ -87,40 +150,59 @@ export function DailyWorkoutPage() {
     }
   }
 
-  if (todayQuery.isLoading) {
-    return (
-      <div className="daily-workout">
-        <h1>Treino do dia</h1>
-        <p className="workout-status">Carregando...</p>
-      </div>
-    );
-  }
-
-  if (!todayQuery.data) {
-    return (
-      <div className="daily-workout empty">
-        <h1>Treino do dia</h1>
-        <EmptyState
-          icon={<CalendarOff size={34} />}
-          title="Nenhum treino agendado para hoje"
-          description="Configure sua agenda semanal em Configuração → Meu Treino para escolher qual plano treinar em cada dia."
-          actionLabel="Configurar Meu Treino"
-          actionTo="/admin/schedule"
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="daily-workout">
-      <h1>Treino do dia</h1>
-      <p className="workout-plan-label">{todayQuery.data.plan_name}</p>
+      <div className="workout-top">
+        <div>
+          <span className="workout-eyebrow">Treino do dia</span>
+          <div className="workout-day-nav">
+            <button
+              type="button"
+              className="day-nav-btn"
+              onClick={() => setDateOffset((o) => Math.max(o - 1, -MAX_DAYS_BACK))}
+              disabled={dateOffset <= -MAX_DAYS_BACK}
+              aria-label="Dia anterior"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <h1>{dayLabel(dateOffset, targetDate)}</h1>
+            <button
+              type="button"
+              className="day-nav-btn"
+              onClick={() => setDateOffset((o) => Math.min(o + 1, 0))}
+              disabled={dateOffset >= 0}
+              aria-label="Próximo dia"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+          {scheduleQuery.data && (
+            <p className="workout-plan-label">
+              Plano selecionado para o dia: <strong>{scheduleQuery.data.plan_name}</strong>
+            </p>
+          )}
+        </div>
+        {sets.length > 0 && <ProgressRing percent={progressPercent} />}
+      </div>
+
       {(isOffline || queuedCount > 0) && (
         <p className="offline-banner">
           {isOffline
             ? `Você está offline — as alterações serão salvas quando a conexão voltar${queuedCount > 0 ? ` (${queuedCount} pendente${queuedCount > 1 ? 's' : ''})` : ''}.`
             : `Sincronizando ${queuedCount} alteração${queuedCount > 1 ? 'ões' : ''} pendente${queuedCount > 1 ? 's' : ''}...`}
         </p>
+      )}
+
+      {scheduleQuery.isLoading && <p className="workout-status">Carregando...</p>}
+
+      {!scheduleQuery.isLoading && !scheduleQuery.data && (
+        <EmptyState
+          icon={<CalendarOff size={34} />}
+          title={dateOffset === 0 ? 'Nenhum treino agendado para hoje' : 'Nenhum treino agendado para este dia'}
+          description="Configure sua agenda semanal em Configuração → Meu Treino para escolher qual plano treinar em cada dia."
+          actionLabel="Configurar Meu Treino"
+          actionTo="/admin/schedule"
+        />
       )}
 
       {workoutQuery.isLoading && <p className="workout-status">Carregando treino do dia...</p>}
@@ -130,7 +212,7 @@ export function DailyWorkoutPage() {
         <p className="workout-status">Este plano ainda não tem exercícios cadastrados.</p>
       )}
 
-      {workoutQuery.data && (
+      {workoutQuery.data && workoutQuery.data.planExercises.length > 0 && (
         <div className="exercise-list">
           {workoutQuery.data.planExercises.map((pe) => (
             <div key={pe.id} className="exercise-card">
@@ -139,7 +221,7 @@ export function DailyWorkoutPage() {
                 {pe.muscle_group && <span className="muscle-group">{pe.muscle_group}</span>}
                 <a
                   className="video-link"
-                  href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${pe.exercise_name} execução correta`)}`}
+                  href={youtubeSearchUrl(`${pe.exercise_name} execução correta`)}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`Ver vídeo de ${pe.exercise_name} no YouTube`}
@@ -161,63 +243,99 @@ export function DailyWorkoutPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(setsByExercise.get(pe.id) ?? []).map((set) => (
-                    <tr key={set.id} className={set.completed ? 'completed' : ''}>
-                      <td>{set.set_number}</td>
-                      <td>
-                        <input
-                          type="number"
-                          min={0}
-                          defaultValue={set.reps ?? ''}
-                          onBlur={(e) =>
-                            persist(set.id, {
-                              reps: e.target.value === '' ? null : Number(e.target.value),
-                            })
-                          }
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          min={0}
-                          step="0.5"
-                          defaultValue={set.weight_kg ?? ''}
-                          onBlur={(e) =>
-                            persist(set.id, {
-                              weight_kg: e.target.value === '' ? null : Number(e.target.value),
-                            })
-                          }
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          min={0}
-                          defaultValue={set.duration_seconds ?? ''}
-                          onBlur={(e) =>
-                            persist(set.id, {
-                              duration_seconds: e.target.value === '' ? null : Number(e.target.value),
-                            })
-                          }
-                        />
-                      </td>
-                      <td>
-                        <button
-                          type="button"
-                          className={`check-btn ${set.completed ? 'checked' : ''}`}
-                          aria-pressed={set.completed}
-                          aria-label={set.completed ? 'Marcar como não concluída' : 'Marcar como concluída'}
-                          onClick={() => persist(set.id, { completed: !set.completed })}
-                        >
-                          ✓
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {(setsByExercise.get(pe.id) ?? []).map((set) => {
+                    const canComplete = set.reps != null && set.weight_kg != null && set.duration_seconds != null;
+                    return (
+                      <tr key={set.id} className={set.completed ? 'completed' : ''}>
+                        <td>
+                          <span className="set-number">{set.set_number}</span>
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min={0}
+                            defaultValue={set.reps ?? ''}
+                            disabled={isLocked}
+                            onBlur={(e) =>
+                              persist(set.id, {
+                                reps: e.target.value === '' ? null : Number(e.target.value),
+                              })
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min={0}
+                            step="0.5"
+                            defaultValue={set.weight_kg ?? ''}
+                            disabled={isLocked}
+                            onBlur={(e) =>
+                              persist(set.id, {
+                                weight_kg: e.target.value === '' ? null : Number(e.target.value),
+                              })
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min={0}
+                            defaultValue={set.duration_seconds ?? ''}
+                            disabled={isLocked}
+                            onBlur={(e) =>
+                              persist(set.id, {
+                                duration_seconds: e.target.value === '' ? null : Number(e.target.value),
+                              })
+                            }
+                          />
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className={`check-btn ${set.completed ? 'checked' : ''}`}
+                            aria-pressed={set.completed}
+                            aria-label={set.completed ? 'Marcar como não concluída' : 'Marcar como concluída'}
+                            disabled={isLocked || (!set.completed && !canComplete)}
+                            title={
+                              !canComplete && !set.completed
+                                ? 'Preencha reps, peso e tempo antes de concluir'
+                                : undefined
+                            }
+                            onClick={() => persist(set.id, { completed: !set.completed })}
+                          >
+                            ✓
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           ))}
+        </div>
+      )}
+
+      {workoutQuery.data && workoutQuery.data.planExercises.length > 0 && (
+        <div className="workout-complete-bar">
+          {completedAt ? (
+            <div className="workout-complete-status">
+              <p className="workout-complete-done">
+                <CheckCircle2 size={17} />
+                Treino concluído às {format(new Date(completedAt), 'HH:mm')}
+              </p>
+              <button type="button" className="reopen-btn" onClick={handleReopenDay}>
+                <RotateCcw size={15} />
+                Reabrir treino
+              </button>
+            </div>
+          ) : (
+            <button type="button" className="complete-day-btn" onClick={handleCompleteDay}>
+              <Flag size={16} />
+              Concluir treino do dia
+            </button>
+          )}
         </div>
       )}
     </div>

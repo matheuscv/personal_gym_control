@@ -13,18 +13,20 @@ export async function fetchActivePlans(): Promise<WorkoutPlan[]> {
   return data;
 }
 
-interface TodayScheduleRow {
+interface ScheduleForDateRow {
   plan_id: number;
   workout_plans: { name: string } | null;
 }
 
-export async function fetchTodayScheduledPlan(): Promise<{ plan_id: number; plan_name: string } | null> {
-  const dayOfWeek = new Date().getDay();
+export async function fetchScheduledPlanForDate(
+  date: Date
+): Promise<{ plan_id: number; plan_name: string } | null> {
+  const dayOfWeek = date.getDay();
   const { data, error } = await supabase
     .from('workout_weekly_schedule')
     .select('plan_id, workout_plans (name)')
     .eq('day_of_week', dayOfWeek)
-    .maybeSingle<TodayScheduleRow>();
+    .maybeSingle<ScheduleForDateRow>();
   if (error) throw error;
   if (!data) return null;
   return { plan_id: data.plan_id, plan_name: data.workout_plans?.name ?? 'Plano' };
@@ -39,28 +41,34 @@ interface PlanExerciseRow {
   exercises: { name: string; muscle_group: string | null } | null;
 }
 
-async function resolveSessionId(planId: number, today: string): Promise<number> {
+interface SessionRow {
+  id: number;
+  completed_at: string | null;
+}
+
+async function resolveSession(planId: number, today: string): Promise<SessionRow> {
   const { data: existingSession, error: sessionLookupError } = await supabase
     .from('workout_sessions')
-    .select('id')
+    .select('id, completed_at')
     .eq('plan_id', planId)
     .eq('session_date', today)
-    .maybeSingle<{ id: number }>();
+    .maybeSingle<SessionRow>();
   if (sessionLookupError) throw sessionLookupError;
-  if (existingSession) return existingSession.id;
+  if (existingSession) return existingSession;
 
   const { data: newSession, error: sessionInsertError } = await supabase
     .from('workout_sessions')
     .insert({ plan_id: planId, session_date: today })
-    .select('id')
-    .single<{ id: number }>();
+    .select('id, completed_at')
+    .single<SessionRow>();
   if (sessionInsertError) throw sessionInsertError;
-  return newSession.id;
+  return newSession;
 }
 
-export async function loadDailyWorkout(planId: number): Promise<DailyWorkout> {
-  const today = format(new Date(), 'yyyy-MM-dd');
-  const sessionId = await resolveSessionId(planId, today);
+export async function loadDailyWorkout(planId: number, date: Date): Promise<DailyWorkout> {
+  const dateStr = format(date, 'yyyy-MM-dd');
+  const session = await resolveSession(planId, dateStr);
+  const sessionId = session.id;
 
   const { data: planExerciseRows, error: planExercisesError } = await supabase
     .from('workout_plan_exercises')
@@ -116,10 +124,28 @@ export async function loadDailyWorkout(planId: number): Promise<DailyWorkout> {
     sets = [...sets, ...(insertedSets ?? [])];
   }
 
-  return { sessionId, planExercises, sets };
+  return { sessionId, completedAt: session.completed_at, planExercises, sets };
 }
 
 export async function updateSessionSet(id: number, patch: SessionSetPatch): Promise<void> {
   const { error } = await supabase.from('workout_session_sets').update(patch).eq('id', id);
+  if (error) throw error;
+}
+
+export async function completeSession(sessionId: number): Promise<string> {
+  const completedAt = new Date().toISOString();
+  const { error } = await supabase
+    .from('workout_sessions')
+    .update({ completed_at: completedAt })
+    .eq('id', sessionId);
+  if (error) throw error;
+  return completedAt;
+}
+
+export async function reopenSession(sessionId: number): Promise<void> {
+  const { error } = await supabase
+    .from('workout_sessions')
+    .update({ completed_at: null })
+    .eq('id', sessionId);
   if (error) throw error;
 }

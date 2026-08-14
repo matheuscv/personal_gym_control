@@ -220,7 +220,8 @@
   border-color: var(--accent);
 }
 
-.plan-builder-remove {
+.plan-builder-remove,
+.plan-builder-video {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -238,6 +239,12 @@
   color: var(--danger);
   border-color: var(--danger);
   background: var(--danger-bg);
+}
+
+.plan-builder-video:hover {
+  color: var(--accent);
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
 }
 
 .plan-builder-submit {
