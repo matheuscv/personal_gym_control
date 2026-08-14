@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CalendarOff, CheckCircle2, ChevronLeft, ChevronRight, Flag, PlayCircle, RotateCcw } from 'lucide-react';
+import {
+  CalendarOff,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Flag,
+  PlayCircle,
+  RotateCcw,
+  Trash2,
+} from 'lucide-react';
 import { addDays, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -7,6 +16,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { ProgressRing } from '../../components/ProgressRing';
 import {
   completeSession,
+  deleteSession,
   fetchScheduledPlanForDate,
   loadDailyWorkout,
   reopenSession,
@@ -113,6 +123,19 @@ export function DailyWorkoutPage() {
     await reopenSession(workoutQuery.data.sessionId);
     setCompletedAt(null);
     queryClient.invalidateQueries({ queryKey: ['daily-workout', planId, dateKey] });
+  }
+
+  async function handleDeleteDay() {
+    if (!workoutQuery.data) return;
+    const confirmed = window.confirm(
+      `Deseja mesmo excluir o treino de ${format(targetDate, 'dd/MM/yyyy')}? Após a exclusão, não será possível recuperar estes dados.`
+    );
+    if (!confirmed) return;
+    await deleteSession(workoutQuery.data.sessionId);
+    setSets([]);
+    setCompletedAt(null);
+    queryClient.invalidateQueries({ queryKey: ['daily-workout', planId, dateKey] });
+    queryClient.invalidateQueries({ queryKey: ['exercise-progress'] });
   }
 
   const isLocked = completedAt != null;
@@ -329,9 +352,19 @@ export function DailyWorkoutPage() {
                 <RotateCcw size={15} />
                 Reabrir treino
               </button>
+              <button type="button" className="delete-day-btn" onClick={handleDeleteDay}>
+                <Trash2 size={13} />
+                Excluir treino
+              </button>
             </div>
           ) : (
-            <button type="button" className="complete-day-btn" onClick={handleCompleteDay}>
+            <button
+              type="button"
+              className="complete-day-btn"
+              onClick={handleCompleteDay}
+              disabled={progressPercent === 0}
+              title={progressPercent === 0 ? 'Marque ao menos uma série como feita para encerrar o dia' : undefined}
+            >
               <Flag size={16} />
               Concluir treino do dia
             </button>

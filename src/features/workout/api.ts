@@ -149,3 +149,8 @@ export async function reopenSession(sessionId: number): Promise<void> {
     .eq('id', sessionId);
   if (error) throw error;
 }
+
+export async function deleteSession(sessionId: number): Promise<void> {
+  const { error } = await supabase.from('workout_sessions').delete().eq('id', sessionId);
+  if (error) throw error;
+}

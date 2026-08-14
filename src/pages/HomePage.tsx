@@ -50,14 +50,14 @@ export function HomePage() {
           <span className="section-title">Treino do dia</span>
           <p>Registre suas séries de hoje.</p>
         </Link>
-        <Link to="/evolucao" className="welcome-card">
+        <div className="welcome-card disabled" title="Em breve">
           <span className="section-title">Evolução Treino</span>
-          <p>Acompanhe sua carga ao longo do tempo.</p>
-        </Link>
-        <Link to="/evolucao-corporal" className="welcome-card">
+          <p>Em breve.</p>
+        </div>
+        <div className="welcome-card disabled" title="Em breve">
           <span className="section-title">Evolução Corporal</span>
-          <p>Veja seus índices de composição corporal.</p>
-        </Link>
+          <p>Em breve.</p>
+        </div>
       </div>
 
       <h2 className="section-title">Dicas</h2>

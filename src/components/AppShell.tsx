@@ -4,11 +4,11 @@ import { ThemeToggle } from '../features/theme/ThemeToggle';
 import { UserMenu } from './UserMenu';
 import './AppShell.css';
 
-const NAV_ITEMS: { to: string; label: string; end?: boolean }[] = [
+const NAV_ITEMS: { to: string; label: string; end?: boolean; disabled?: boolean }[] = [
   { to: '/', label: 'Home', end: true },
   { to: '/treino', label: 'Treino do dia' },
-  { to: '/evolucao', label: 'Evolução Treino' },
-  { to: '/evolucao-corporal', label: 'Evolução Corporal' },
+  { to: '/evolucao', label: 'Evolução Treino', disabled: true },
+  { to: '/evolucao-corporal', label: 'Evolução Corporal', disabled: true },
 ];
 
 export function AppShell() {
@@ -26,16 +26,22 @@ export function AppShell() {
           </div>
         </header>
         <nav className="app-nav">
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) => (isActive ? 'active' : '')}
-            >
-              {item.label}
-            </NavLink>
-          ))}
+          {NAV_ITEMS.map((item) =>
+            item.disabled ? (
+              <span key={item.to} className="nav-disabled" title="Em breve">
+                {item.label}
+              </span>
+            ) : (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) => (isActive ? 'active' : '')}
+              >
+                {item.label}
+              </NavLink>
+            )
+          )}
         </nav>
       </div>
       <main className="app-content">

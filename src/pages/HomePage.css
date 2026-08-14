@@ -52,6 +52,16 @@
   transform: translateY(-1px);
 }
 
+.welcome-card.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.welcome-card.disabled:hover {
+  border-color: var(--border);
+  transform: none;
+}
+
 .welcome-card .section-title {
   display: block;
   font-size: 14px;
