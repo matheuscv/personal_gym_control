@@ -4,6 +4,8 @@ import { useAuth } from '../features/auth/auth-context';
 import { fetchActivePlans } from '../features/workout/api';
 import './HomePage.css';
 
+const IS_ANDROID = import.meta.env.VITE_PLATFORM === 'android';
+
 const TIPS = [
   'Beba água antes, durante e depois do treino.',
   'Aqueça por 5–10 minutos antes de começar — reduz o risco de lesão.',
@@ -50,14 +52,28 @@ export function HomePage() {
           <span className="section-title">Treino do dia</span>
           <p>Registre suas séries de hoje.</p>
         </Link>
-        <div className="welcome-card disabled" title="Em breve">
-          <span className="section-title">Evolução Treino</span>
-          <p>Em breve.</p>
-        </div>
-        <div className="welcome-card disabled" title="Em breve">
-          <span className="section-title">Evolução Corporal</span>
-          <p>Em breve.</p>
-        </div>
+        {IS_ANDROID ? (
+          <div className="welcome-card disabled" title="Em breve">
+            <span className="section-title">Evolução Treino</span>
+            <p>Em breve.</p>
+          </div>
+        ) : (
+          <Link to="/evolucao" className="welcome-card">
+            <span className="section-title">Evolução Treino</span>
+            <p>Acompanhe sua carga ao longo do tempo.</p>
+          </Link>
+        )}
+        {IS_ANDROID ? (
+          <div className="welcome-card disabled" title="Em breve">
+            <span className="section-title">Evolução Corporal</span>
+            <p>Em breve.</p>
+          </div>
+        ) : (
+          <Link to="/evolucao-corporal" className="welcome-card">
+            <span className="section-title">Evolução Corporal</span>
+            <p>Veja seus índices de composição corporal.</p>
+          </Link>
+        )}
       </div>
 
       <h2 className="section-title">Dicas</h2>

@@ -5,6 +5,7 @@ import { Eye, Save, PencilLine, PlayCircle, X } from 'lucide-react';
 import { useAuth } from '../auth/auth-context';
 import { importPlanSchema, type ImportPlanInput } from '../../../api/_lib/importSchema';
 import { youtubeSearchUrl } from '../../lib/youtube';
+import './ImportPreview.css';
 import './ImportPlanPage.css';
 
 const EXAMPLE = `{

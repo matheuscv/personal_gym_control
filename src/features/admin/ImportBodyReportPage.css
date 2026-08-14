@@ -1,0 +1,20 @@
+.import-body-report-eyebrow {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.import-body-report .import-hint {
+  margin-bottom: 16px;
+}
+
+.import-preview-notes {
+  color: var(--text);
+  font-size: 13px;
+  margin: 0 0 14px;
+  font-style: italic;
+}
