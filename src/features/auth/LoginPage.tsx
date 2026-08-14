@@ -223,6 +223,9 @@ export function LoginPage() {
           </form>
         )}
       </div>
+      <span className="auth-version" title={`Commit ${__APP_COMMIT__}`}>
+        v{__APP_VERSION__}
+      </span>
     </section>
   );
 }
