@@ -191,6 +191,18 @@ function formatDelta(delta: number, decimals: number): string {
   return `${delta > 0 ? '+' : ''}${delta.toFixed(decimals)}`;
 }
 
+// Mesma regra do card Peso atual (reduzir é favorável), só que pras
+// medidas perimétricas (cm) em vez dos índices de body_metrics.
+function measurementKpiDelta(
+  current: number | null | undefined,
+  previous: number | null | undefined
+): { delta: number; cls: string } | null {
+  if (current == null || previous == null) return null;
+  const delta = current - previous;
+  const cls = delta === 0 ? 'kpi-delta-neutral' : delta < 0 ? 'kpi-delta-good' : 'kpi-delta-bad';
+  return { delta, cls };
+}
+
 // Medidas perimétricas seguem a mesma regra da Gordura corporal: reduzir é
 // favorável (seta verde pra baixo), aumentar é desfavorável (vermelha pra
 // cima) — vale pra todos os 15 campos, sem distinção por área do corpo.
@@ -305,6 +317,11 @@ export function BodyDashboardPage() {
     latest.metrics.pontuacao_corporal,
     previousReport?.metrics.pontuacao_corporal
   );
+  const cinturaDelta = measurementKpiDelta(latest.measurements.cintura_cm, previousReport?.measurements.cintura_cm);
+  const abdomenDelta = measurementKpiDelta(
+    latest.measurements.abdomen_quadril_cm,
+    previousReport?.measurements.abdomen_quadril_cm
+  );
 
   const resumoRows = buildResumo(latest);
 
@@ -364,6 +381,20 @@ export function BodyDashboardPage() {
               <span>% pendente</span>
               <strong>{goalProgress.pendingPct != null ? `${goalProgress.pendingPct.toFixed(1)}%` : '—'}</strong>
             </div>
+          </div>
+          <div className="kpi-card">
+            <span className="kpi-label">Cintura</span>
+            <span className="kpi-value">{latest.measurements.cintura_cm ?? '—'} cm</span>
+            {cinturaDelta && (
+              <span className={`kpi-delta ${cinturaDelta.cls}`}>({formatDelta(cinturaDelta.delta, 1)} cm)</span>
+            )}
+          </div>
+          <div className="kpi-card">
+            <span className="kpi-label">Abdômen/Quadril</span>
+            <span className="kpi-value">{latest.measurements.abdomen_quadril_cm ?? '—'} cm</span>
+            {abdomenDelta && (
+              <span className={`kpi-delta ${abdomenDelta.cls}`}>({formatDelta(abdomenDelta.delta, 1)} cm)</span>
+            )}
           </div>
         </div>
 
