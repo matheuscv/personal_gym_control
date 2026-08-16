@@ -79,7 +79,7 @@ function App() {
               CreateBodyReportPage &&
               ImportBodyReportPage && (
                 <Route path="/admin" element={<AdminLayout />}>
-                  <Route index element={<Navigate to="schedule" replace />} />
+                  <Route index element={<Navigate to="goal" replace />} />
                   <Route path="goal" element={<MyGoalPage />} />
                   <Route path="schedule" element={<MySchedulePage />} />
                   <Route path="plans" element={<PlansPage />} />
