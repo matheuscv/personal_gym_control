@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../features/auth/auth-context';
 import { fetchActivePlans } from '../features/workout/api';
+import { WorkoutCalendar } from '../components/WorkoutCalendar';
 import './HomePage.css';
 
 const IS_ANDROID = import.meta.env.VITE_PLATFORM === 'android';
@@ -68,6 +69,8 @@ export function HomePage() {
           <p>Veja seus índices de composição corporal.</p>
         </Link>
       </div>
+
+      <WorkoutCalendar />
 
       <h2 className="section-title">Dicas</h2>
       <ul className="tips-list">

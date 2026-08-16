@@ -154,3 +154,30 @@ export async function deleteSession(sessionId: number): Promise<void> {
   const { error } = await supabase.from('workout_sessions').delete().eq('id', sessionId);
   if (error) throw error;
 }
+
+interface MonthSessionRow {
+  session_date: string;
+  workout_session_sets: { completed: boolean }[];
+}
+
+// % de séries concluídas por dia, só pras datas que já têm sessão
+// registrada (a sessão é criada sob demanda ao abrir Treino do dia) —
+// usado pelo calendário da Home.
+export async function fetchMonthSessionProgress(from: Date, to: Date): Promise<Record<string, number>> {
+  const { data, error } = await supabase
+    .from('workout_sessions')
+    .select('session_date, workout_session_sets (completed)')
+    .gte('session_date', format(from, 'yyyy-MM-dd'))
+    .lte('session_date', format(to, 'yyyy-MM-dd'))
+    .returns<MonthSessionRow[]>();
+  if (error) throw error;
+
+  const result: Record<string, number> = {};
+  for (const row of data ?? []) {
+    const sets = row.workout_session_sets ?? [];
+    if (sets.length === 0) continue;
+    const done = sets.filter((s) => s.completed).length;
+    result[row.session_date] = Math.round((done / sets.length) * 100);
+  }
+  return result;
+}

@@ -1,7 +1,7 @@
 import { CalendarDays } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchPlans } from './api';
-import { clearScheduleDay, fetchWeeklySchedule, setScheduleDay } from './scheduleApi';
+import { clearScheduleDay, fetchWeeklySchedule, setScheduleDay } from '../scheduleApi';
 import './MySchedulePage.css';
 
 const DAYS = [
