@@ -11,7 +11,8 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { PencilLine, Save, Target, TrendingDown } from 'lucide-react';
-import { fetchGoal, upsertGoal } from './goalApi';
+import { fetchGoal, upsertGoal } from '../goalApi';
+import { computeGoalProgress } from '../goalProgress';
 import { fetchBodyReports } from './bodyReportApi';
 import './MyGoalPage.css';
 
@@ -36,13 +37,6 @@ export function MyGoalPage() {
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
-  // DIAGNÓSTICO TEMPORÁRIO — identifica se o componente está remontando ou
-  // se algo mais está revertendo isEditing logo após o clique em "Editar".
-  // Remover assim que o bug do botão Editar Meu Objetivo for confirmado.
-  const instanceIdRef = useRef(Math.random().toString(36).slice(2, 8));
-  // eslint-disable-next-line no-console
-  console.log('[MyGoalPage] render — instance=', instanceIdRef.current, 'isEditing=', isEditing);
-
   // Só sincroniza o form com o servidor UMA vez, na primeira vez que os
   // dados chegam — usa ref (não state) de propósito, pra garantir que um
   // refetch em segundo plano (ex: invalidateQueries do próprio save) nunca
@@ -53,18 +47,19 @@ export function MyGoalPage() {
     if (goalQuery.isSuccess && !didInitRef.current) {
       didInitRef.current = true;
       const hasGoal = !!(goalQuery.data?.birth_date || goalQuery.data?.desired_weight_kg != null);
-      // eslint-disable-next-line no-console
-      console.log(
-        '[MyGoalPage] init effect firing — instance=',
-        instanceIdRef.current,
-        'hasGoal=',
-        hasGoal
-      );
       setBirthDate(goalQuery.data?.birth_date ?? '');
       setDesiredWeight(goalQuery.data?.desired_weight_kg != null ? String(goalQuery.data.desired_weight_kg) : '');
       setIsEditing(!hasGoal);
     }
   }, [goalQuery.isSuccess, goalQuery.data]);
+
+  // O botão "Salvar objetivo" aparece exatamente onde "Editar Meu
+  // Objetivo" estava. Em telas touch, o navegador dispara um clique
+  // sintético atrasado (~300ms, "ghost click") pra manter compatibilidade
+  // com quem ainda espera eventos de mouse — esse clique fantasma acaba
+  // caindo no botão novo e submetendo o form sem o usuário perceber.
+  // Ignora qualquer submit que aconteça logo após entrar no modo edição.
+  const editModeEnteredAtRef = useRef(0);
 
   const age = useMemo(() => {
     if (!birthDate) return null;
@@ -83,14 +78,9 @@ export function MyGoalPage() {
   const initialWeight = reportsWithWeight[reportsWithWeight.length - 1]?.metrics.peso_kg ?? null;
   const desiredWeightNum = desiredWeight.trim() ? Number(desiredWeight) : null;
 
-  const pendingKg =
-    currentWeight != null && desiredWeightNum != null ? currentWeight - desiredWeightNum : null;
+  const { pendingKg, pendingPct } = computeGoalProgress(initialWeight, currentWeight, desiredWeightNum);
   const totalJourneyKg =
     initialWeight != null && desiredWeightNum != null ? initialWeight - desiredWeightNum : null;
-  const pendingPct =
-    pendingKg != null && totalJourneyKg
-      ? (Math.abs(pendingKg) / Math.abs(totalJourneyKg)) * 100
-      : null;
 
   const chartPoints = useMemo(() => {
     const ascending = [...reportsWithWeight].reverse();
@@ -119,11 +109,17 @@ export function MyGoalPage() {
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (Date.now() - editModeEnteredAtRef.current < 400) return;
     setError(null);
     saveMutation.mutate({
       birth_date: birthDate || null,
       desired_weight_kg: desiredWeightNum,
     });
+  }
+
+  function handleEditClick() {
+    editModeEnteredAtRef.current = Date.now();
+    setIsEditing(true);
   }
 
   return (
@@ -171,15 +167,7 @@ export function MyGoalPage() {
             {saveMutation.isPending ? 'Salvando...' : 'Salvar objetivo'}
           </button>
         ) : (
-          <button
-            type="button"
-            className="my-goal-edit-btn"
-            onClick={() => {
-              // eslint-disable-next-line no-console
-              console.log('[MyGoalPage] Editar clicado — instance=', instanceIdRef.current);
-              setIsEditing(true);
-            }}
-          >
+          <button type="button" className="my-goal-edit-btn" onClick={handleEditClick}>
             <PencilLine size={13} />
             Editar Meu Objetivo
           </button>
