@@ -20,6 +20,15 @@ const EXAMPLE = `{
   "tmb_kcal": 1720
 }`;
 
+const COMPOSITION_ANALYSIS_LABELS: { key: 'peso' | 'massa_gorda' | 'massa_ossea' | 'massa_proteica' | 'agua_corporal' | 'massa_muscular'; label: string }[] = [
+  { key: 'peso', label: 'Peso' },
+  { key: 'massa_gorda', label: 'Massa gorda' },
+  { key: 'massa_ossea', label: 'Massa óssea' },
+  { key: 'massa_proteica', label: 'Massa protéica' },
+  { key: 'agua_corporal', label: 'Água corporal' },
+  { key: 'massa_muscular', label: 'Massa muscular' },
+];
+
 function formatMeasuredAt(dateStr: string): string {
   try {
     return format(new Date(`${dateStr}T00:00:00`), 'dd/MM/yyyy');
@@ -109,6 +118,12 @@ export function ImportBodyReportPage() {
       })).filter((field): field is typeof field & { value: number } => typeof field.value === 'number')
     : [];
 
+  const compositionRows = preview?.composition_analysis
+    ? COMPOSITION_ANALYSIS_LABELS.filter(({ key }) => preview.composition_analysis?.[key] != null).map(
+        ({ key, label }) => ({ key, label, ...preview.composition_analysis![key]! })
+      )
+    : [];
+
   return (
     <div className="admin-section import-body-report">
       <span className="import-body-report-eyebrow">Colar JSON</span>
@@ -157,6 +172,22 @@ export function ImportBodyReportPage() {
             </ul>
           ) : (
             <p className="import-hint">Nenhum índice preenchido além da data.</p>
+          )}
+
+          {compositionRows.length > 0 && (
+            <>
+              <span className="import-preview-eyebrow">Faixa de referência e avaliação</span>
+              <ul className="import-preview-list">
+                {compositionRows.map((row) => (
+                  <li key={row.key} className="import-preview-item">
+                    <span className="import-preview-item-name">{row.label}</span>
+                    <span className="import-preview-item-target">
+                      ({row.min}-{row.max}) {row.avaliacao}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
 
           <div className="import-preview-actions">

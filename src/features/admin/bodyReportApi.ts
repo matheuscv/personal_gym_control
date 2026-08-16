@@ -1,5 +1,6 @@
 import { supabase } from '../../lib/supabaseClient';
 import { BODY_METRIC_FIELDS } from '../bodyMetricsFields';
+import type { CompositionAnalysis } from '../../../api/_lib/importBodyReportSchema';
 
 export type MetricValues = Record<string, number | null>;
 
@@ -8,6 +9,12 @@ export interface BodyReport {
   measured_at: string;
   notes: string | null;
   metrics: MetricValues;
+  composition_analysis: CompositionAnalysis | null;
+}
+
+interface BodyMetricsRow {
+  composition_analysis?: CompositionAnalysis | null;
+  [key: string]: unknown;
 }
 
 interface BodyReportRow {
@@ -16,7 +23,7 @@ interface BodyReportRow {
   notes: string | null;
   // report_id em body_metrics é unique -> PostgREST trata como relação 1:1
   // e embute um objeto único, não um array.
-  body_metrics: MetricValues | null;
+  body_metrics: BodyMetricsRow | null;
 }
 
 export async function fetchBodyReports(): Promise<BodyReport[]> {
@@ -27,12 +34,16 @@ export async function fetchBodyReports(): Promise<BodyReport[]> {
     .returns<BodyReportRow[]>();
   if (error) throw error;
 
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    measured_at: row.measured_at,
-    notes: row.notes,
-    metrics: row.body_metrics ?? {},
-  }));
+  return (data ?? []).map((row) => {
+    const { composition_analysis, ...metrics } = row.body_metrics ?? {};
+    return {
+      id: row.id,
+      measured_at: row.measured_at,
+      notes: row.notes,
+      metrics: metrics as MetricValues,
+      composition_analysis: composition_analysis ?? null,
+    };
+  });
 }
 
 export async function upsertBodyReport(input: {

@@ -6,6 +6,23 @@ if (process.env.SENTRY_DSN) {
   Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.2 });
 }
 
+const compositionRowSchema = z.object({
+  min: z.number(),
+  max: z.number(),
+  avaliacao: z.string().trim().min(1),
+});
+
+const compositionAnalysisSchema = z
+  .object({
+    peso: compositionRowSchema.nullish(),
+    massa_gorda: compositionRowSchema.nullish(),
+    massa_ossea: compositionRowSchema.nullish(),
+    massa_proteica: compositionRowSchema.nullish(),
+    agua_corporal: compositionRowSchema.nullish(),
+    massa_muscular: compositionRowSchema.nullish(),
+  })
+  .nullish();
+
 const bodyReportSchema = z.object({
   measured_at: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida (use AAAA-MM-DD)'),
   notes: z.string().trim().min(1).nullish(),
@@ -26,6 +43,7 @@ const bodyReportSchema = z.object({
   peso_alvo_kg: z.number().positive().nullish(),
   controle_peso_kg: z.number().nullish(),
   grau_obesidade_pct: z.number().nullish(),
+  composition_analysis: compositionAnalysisSchema,
 });
 
 function supabaseForRequest(req: Request) {

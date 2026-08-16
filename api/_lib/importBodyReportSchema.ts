@@ -1,5 +1,25 @@
 import { z } from 'zod';
 
+const compositionRowSchema = z.object({
+  min: z.number(),
+  max: z.number(),
+  avaliacao: z.string().trim().min(1),
+});
+
+// Faixa de referência + avaliação da tabela "Análise da composição
+// corporal" do relatório — só vem de importação (extraída da foto/PDF
+// original), nunca do formulário manual.
+const compositionAnalysisSchema = z
+  .object({
+    peso: compositionRowSchema.nullish(),
+    massa_gorda: compositionRowSchema.nullish(),
+    massa_ossea: compositionRowSchema.nullish(),
+    massa_proteica: compositionRowSchema.nullish(),
+    agua_corporal: compositionRowSchema.nullish(),
+    massa_muscular: compositionRowSchema.nullish(),
+  })
+  .nullish();
+
 export const bodyReportSchema = z.object({
   measured_at: z
     .string()
@@ -22,6 +42,8 @@ export const bodyReportSchema = z.object({
   peso_alvo_kg: z.number().positive().nullish(),
   controle_peso_kg: z.number().nullish(),
   grau_obesidade_pct: z.number().nullish(),
+  composition_analysis: compositionAnalysisSchema,
 });
 
 export type BodyReportInput = z.infer<typeof bodyReportSchema>;
+export type CompositionAnalysis = z.infer<typeof compositionAnalysisSchema>;
