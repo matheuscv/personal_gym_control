@@ -27,9 +27,11 @@ export function AppShell() {
             <span>Personal Gym Control</span>
           </Link>
           <div className="app-topbar-controls">
-            <span className="app-version" title={`Commit ${__APP_COMMIT__}`}>
-              v{__APP_VERSION__}
-            </span>
+            {IS_ANDROID && (
+              <span className="app-version" title={`Commit ${__APP_COMMIT__}`}>
+                v{__APP_VERSION__}
+              </span>
+            )}
             <ThemeToggle />
             <UserMenu />
           </div>

@@ -7,6 +7,8 @@ import { useAuth } from './auth-context';
 import { PasswordInput } from './PasswordInput';
 import './LoginPage.css';
 
+const IS_ANDROID = import.meta.env.VITE_PLATFORM === 'android';
+
 const loginSchema = z.object({
   email: z.string().email('E-mail inválido'),
   password: z.string().min(6, 'Mínimo de 6 caracteres'),
@@ -223,9 +225,11 @@ export function LoginPage() {
           </form>
         )}
       </div>
-      <span className="auth-version" title={`Commit ${__APP_COMMIT__}`}>
-        v{__APP_VERSION__}
-      </span>
+      {IS_ANDROID && (
+        <span className="auth-version" title={`Commit ${__APP_COMMIT__}`}>
+          v{__APP_VERSION__}
+        </span>
+      )}
     </section>
   );
 }
