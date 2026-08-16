@@ -15,6 +15,7 @@ import {
 import { ptBR } from 'date-fns/locale';
 import { fetchMonthSessionProgress } from '../features/workout/api';
 import { fetchWeeklySchedule } from '../features/scheduleApi';
+import { ProgressRing } from './ProgressRing';
 import './WorkoutCalendar.css';
 
 const MAX_MONTHS_BACK = 2;
@@ -56,6 +57,19 @@ export function WorkoutCalendar() {
   );
   const leadingBlanks = startOfMonth(viewedMonth).getDay();
 
+  // Média do mês: soma o % de cada dia de treino que já passou (ou é
+  // hoje) dividido pela quantidade desses dias — dias de treino ainda no
+  // futuro não entram na conta, já que não têm nada "realizado" ainda.
+  const { averagePercent, trackedDaysCount } = useMemo(() => {
+    const relevantDays = days.filter((d) => scheduledDays.has(d.getDay()) && !isAfter(d, today));
+    if (relevantDays.length === 0) return { averagePercent: null as number | null, trackedDaysCount: 0 };
+    const total = relevantDays.reduce((sum, d) => {
+      const key = format(d, 'yyyy-MM-dd');
+      return sum + (progressQuery.data?.[key] ?? 0);
+    }, 0);
+    return { averagePercent: Math.round(total / relevantDays.length), trackedDaysCount: relevantDays.length };
+  }, [days, scheduledDays, today, progressQuery.data]);
+
   return (
     <div className="workout-calendar">
       <div className="workout-calendar-header">
@@ -80,6 +94,22 @@ export function WorkoutCalendar() {
           >
             <ChevronRight size={16} />
           </button>
+        </div>
+      </div>
+
+      <div className="workout-calendar-summary">
+        {averagePercent != null ? (
+          <ProgressRing percent={averagePercent} size={62} strokeWidth={6} />
+        ) : (
+          <div className="workout-calendar-summary-empty">—</div>
+        )}
+        <div className="workout-calendar-summary-text">
+          <span className="workout-calendar-summary-label">Média de conclusão do mês</span>
+          <span className="workout-calendar-summary-caption">
+            {trackedDaysCount > 0
+              ? `${trackedDaysCount} dia${trackedDaysCount === 1 ? '' : 's'} de treino contabilizado${trackedDaysCount === 1 ? '' : 's'}`
+              : 'Ainda não há dias de treino neste mês'}
+          </span>
         </div>
       </div>
 

@@ -18,9 +18,9 @@
 .workout-calendar-eyebrow {
   font-family: var(--mono);
   font-size: 11px;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--text);
+  color: var(--accent);
 }
 
 .workout-calendar-nav {
@@ -31,6 +31,7 @@
 
 .workout-calendar-month {
   font-family: var(--heading);
+  font-weight: 700;
   font-size: 15px;
   color: var(--text-h);
   min-width: 130px;
@@ -61,6 +62,52 @@
   cursor: not-allowed;
 }
 
+.workout-calendar-summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.workout-calendar-summary-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 62px;
+  height: 62px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 6px solid var(--border);
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.workout-calendar-summary-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.workout-calendar-summary-label {
+  font-family: var(--heading);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-h);
+}
+
+.workout-calendar-summary-caption {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text);
+}
+
 .workout-calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -69,12 +116,13 @@
 
 .workout-calendar-weekday {
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.05em;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text);
   text-align: center;
-  padding-bottom: 6px;
+  padding-bottom: 8px;
 }
 
 .workout-calendar-cell {
@@ -103,14 +151,19 @@
 .workout-calendar-daynum {
   font-family: var(--mono);
   font-size: 11.5px;
+  color: var(--text);
+}
+
+.workout-calendar-cell.is-workout-day .workout-calendar-daynum {
+  font-weight: 700;
   color: var(--text-h);
 }
 
 .workout-calendar-percent {
   font-family: var(--mono);
-  font-size: 10.5px;
-  font-weight: 600;
-  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 7px;
   border-radius: 20px;
   text-decoration: none;
   border: 1px solid;
