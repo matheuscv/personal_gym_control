@@ -18,6 +18,17 @@ function resolveCommitSha(): string {
   }
 }
 
+function resolveAppVersion(): string {
+  // No build do APK (GitHub Actions, ver .github/workflows/android-apk.yml)
+  // o versionCode/versionName do pacote Android já usa github.run_number —
+  // a versão exibida no app acompanha o mesmo número (1.0.<run_number>)
+  // pra sempre bater com o APK instalado. Fora desse contexto (web/local),
+  // usa o version do package.json normalmente.
+  const runNumber = process.env.GITHUB_RUN_NUMBER
+  if (runNumber) return `1.0.${runNumber}`
+  return pkg.version
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
@@ -30,10 +41,10 @@ export default defineConfig(({ mode }) => {
       // Vercel — expõe explicitamente para o bundle do cliente aqui em vez
       // de duplicar a env var com um segundo nome.
       __SENTRY_DSN__: JSON.stringify(env.SENTRY_DSN ?? ''),
-      // Versão exibida no topo do app (web e Android, mesmo bundle). O
-      // número vem do package.json (bump manual a cada release relevante);
-      // o commit é só um detalhe extra pra identificar o build exato.
-      __APP_VERSION__: JSON.stringify(pkg.version),
+      // Versão exibida no topo do app (web e Android, mesmo bundle) — ver
+      // resolveAppVersion acima. O commit é só um detalhe extra pra
+      // identificar o build exato.
+      __APP_VERSION__: JSON.stringify(resolveAppVersion()),
       __APP_COMMIT__: JSON.stringify(resolveCommitSha()),
     },
     plugins: [
