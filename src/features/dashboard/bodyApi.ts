@@ -4,6 +4,7 @@ import type { CompositionAnalysis } from '../../../api/_lib/importBodyReportSche
 export interface BodyReportPoint {
   measured_at: string;
   metrics: Record<string, number | null>;
+  measurements: Record<string, number | null>;
   composition_analysis: CompositionAnalysis | null;
 }
 
@@ -14,15 +15,16 @@ interface BodyMetricsRow {
 
 interface BodyReportRow {
   measured_at: string;
-  // report_id em body_metrics é unique -> PostgREST trata como relação 1:1
-  // e embute um objeto único, não um array.
+  // report_id em body_metrics/body_measurements é unique -> PostgREST trata
+  // como relação 1:1 e embute um objeto único, não um array.
   body_metrics: BodyMetricsRow | null;
+  body_measurements: Record<string, number | null> | null;
 }
 
 export async function fetchBodyProgress(): Promise<BodyReportPoint[]> {
   const { data, error } = await supabase
     .from('body_reports')
-    .select('measured_at, body_metrics (*)')
+    .select('measured_at, body_metrics (*), body_measurements (*)')
     .order('measured_at')
     .returns<BodyReportRow[]>();
   if (error) throw error;
@@ -32,6 +34,7 @@ export async function fetchBodyProgress(): Promise<BodyReportPoint[]> {
     return {
       measured_at: row.measured_at,
       metrics: metrics as Record<string, number | null>,
+      measurements: row.body_measurements ?? {},
       composition_analysis: composition_analysis ?? null,
     };
   });
