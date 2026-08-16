@@ -5,10 +5,12 @@ export interface BodyMetricField {
 }
 
 export const BODY_METRIC_FIELDS: BodyMetricField[] = [
+  { key: 'pontuacao_corporal', label: 'Pontuação corporal', unit: 'pts' },
   { key: 'peso_kg', label: 'Peso', unit: 'kg' },
   { key: 'imc', label: 'IMC', unit: '' },
   { key: 'gordura_corporal_pct', label: 'Gordura corporal', unit: '%' },
   { key: 'massa_muscular_kg', label: 'Massa muscular', unit: 'kg' },
+  { key: 'musculo_esqueletico_kg', label: 'Músculo esquelético', unit: 'kg' },
   { key: 'massa_ossea_kg', label: 'Massa óssea', unit: 'kg' },
   { key: 'agua_corporal_pct', label: 'Água corporal', unit: '%' },
   { key: 'proteina_pct', label: 'Proteína', unit: '%' },

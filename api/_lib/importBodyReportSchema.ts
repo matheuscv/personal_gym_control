@@ -25,10 +25,12 @@ export const bodyReportSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida (use AAAA-MM-DD)'),
   notes: z.string().trim().min(1).nullish(),
+  pontuacao_corporal: z.number().int().nonnegative().nullish(),
   peso_kg: z.number().positive().nullish(),
   imc: z.number().positive().nullish(),
   gordura_corporal_pct: z.number().min(0).max(100).nullish(),
   massa_muscular_kg: z.number().positive().nullish(),
+  musculo_esqueletico_kg: z.number().positive().nullish(),
   massa_ossea_kg: z.number().positive().nullish(),
   agua_corporal_pct: z.number().min(0).max(100).nullish(),
   proteina_pct: z.number().min(0).max(100).nullish(),

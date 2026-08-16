@@ -12,10 +12,11 @@ import { Line } from 'react-chartjs-2';
 import { ArrowDown, ArrowUp, PieChart } from 'lucide-react';
 import { EmptyState } from '../../components/EmptyState';
 import { fetchBodyProgress, type BodyReportPoint } from './bodyApi';
-import { BODY_METRIC_FIELDS } from '../bodyMetricsFields';
+import { BODY_METRIC_FIELDS, type BodyMetricField } from '../bodyMetricsFields';
+import { BODY_MEASUREMENT_FIELDS } from '../bodyMeasurementFields';
 import { fetchGoal } from '../goalApi';
 import { computeGoalProgress } from '../goalProgress';
-import { bodyLevelClass, classifyBodyFatPct, classifyImc } from '../bodyClassification';
+import { bodyLevelClass, classifyImc } from '../bodyClassification';
 import './dashboard.css';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip);
@@ -133,6 +134,7 @@ const LOWER_IS_BETTER = new Set([
   'peso_kg',
   'imc',
   'gordura_corporal_pct',
+  'massa_gorda_kg',
   'gordura_visceral',
   'gordura_subcutanea_pct',
   'smi_kg_m2',
@@ -145,9 +147,12 @@ const HIGHER_IS_BETTER = new Set([
   'massa_muscular_kg',
   'massa_ossea_kg',
   'agua_corporal_pct',
+  'agua_corporal_kg',
   'proteina_pct',
+  'massa_proteica_kg',
   'tmb_kcal',
   'peso_livre_gordura_kg',
+  'pontuacao_corporal',
 ]);
 
 function trendDisplay(
@@ -162,34 +167,98 @@ function trendDisplay(
   return { dir, good };
 }
 
+// Delta do valor mais recente contra a medição anterior, pros cards do
+// topo (Peso, IMC, Gordura subcutânea, Idade corporal, Pontuação
+// corporal) — mesma regra de favorabilidade usada nas setinhas do
+// histórico (LOWER_IS_BETTER/HIGHER_IS_BETTER).
+function kpiDelta(
+  fieldKey: string,
+  current: number | null | undefined,
+  previous: number | null | undefined
+): { delta: number; cls: string } | null {
+  if (current == null || previous == null) return null;
+  const delta = current - previous;
+  const cls =
+    delta === 0
+      ? 'kpi-delta-neutral'
+      : (LOWER_IS_BETTER.has(fieldKey) ? delta < 0 : delta > 0)
+        ? 'kpi-delta-good'
+        : 'kpi-delta-bad';
+  return { delta, cls };
+}
+
+function formatDelta(delta: number, decimals: number): string {
+  return `${delta > 0 ? '+' : ''}${delta.toFixed(decimals)}`;
+}
+
+// Medidas perimétricas seguem a mesma regra da Gordura corporal: reduzir é
+// favorável (seta verde pra baixo), aumentar é desfavorável (vermelha pra
+// cima) — vale pra todos os 15 campos, sem distinção por área do corpo.
+function measurementTrendDisplay(
+  current: number | null | undefined,
+  previous: number | null | undefined
+): { dir: 'up' | 'down'; good: boolean } | null {
+  const dir = trend(current, previous);
+  if (!dir) return null;
+  return { dir, good: dir === 'down' };
+}
+
+// Gordura corporal/Água corporal/Proteína só existem no banco como
+// percentual (proporção de peso) — pra sempre exibir o valor bruto medido
+// (kg) em vez do percentual, tanto no histórico quanto no seletor do
+// gráfico, essas 3 entradas de BODY_METRIC_FIELDS são trocadas pelo
+// equivalente em kg (mesma conta do buildResumo), mantendo a posição.
+const KG_FIELD_OVERRIDE: Record<string, BodyMetricField> = {
+  gordura_corporal_pct: { key: 'massa_gorda_kg', label: 'Massa gorda', unit: 'kg' },
+  agua_corporal_pct: { key: 'agua_corporal_kg', label: 'Água corporal', unit: 'kg' },
+  proteina_pct: { key: 'massa_proteica_kg', label: 'Massa protéica', unit: 'kg' },
+};
+
+const HISTORY_FIELDS: BodyMetricField[] = BODY_METRIC_FIELDS.map((field) => KG_FIELD_OVERRIDE[field.key] ?? field);
+
 export function BodyDashboardPage() {
   const progressQuery = useQuery({ queryKey: ['body-progress'], queryFn: fetchBodyProgress });
   const goalQuery = useQuery({ queryKey: ['user-goal'], queryFn: fetchGoal });
   const [selectedField, setSelectedField] = useState('peso_kg');
-
-  const availableFields = useMemo(() => {
-    const reports = progressQuery.data ?? [];
-    return BODY_METRIC_FIELDS.filter((field) => reports.some((r) => r.metrics[field.key] != null));
-  }, [progressQuery.data]);
 
   const desiredWeight = goalQuery.data?.desired_weight_kg ?? null;
 
   // Sempre sobrescreve Peso-alvo/Controle de peso com o objetivo cadastrado
   // em Meu Objetivo, em vez do valor que veio no relatório original — e
   // recalcula o controle em cima desse valor pra cada linha do histórico.
+  // Também injeta as séries derivadas em kg (massa gorda, água corporal,
+  // massa proteica) pra elas ficarem selecionáveis no gráfico.
   const reportsWithGoalOverride = useMemo(() => {
     const reports = progressQuery.data ?? [];
-    return reports.map((r) => ({
-      measured_at: r.measured_at,
-      composition_analysis: r.composition_analysis,
-      metrics: {
-        ...r.metrics,
-        peso_alvo_kg: desiredWeight,
-        controle_peso_kg:
-          desiredWeight != null && r.metrics.peso_kg != null ? desiredWeight - r.metrics.peso_kg : null,
-      } as Record<string, number | null>,
-    }));
+    return reports.map((r) => {
+      const peso = r.metrics.peso_kg;
+      return {
+        measured_at: r.measured_at,
+        composition_analysis: r.composition_analysis,
+        measurements: r.measurements,
+        metrics: {
+          ...r.metrics,
+          peso_alvo_kg: desiredWeight,
+          controle_peso_kg:
+            desiredWeight != null && r.metrics.peso_kg != null ? desiredWeight - r.metrics.peso_kg : null,
+          massa_gorda_kg:
+            peso != null && r.metrics.gordura_corporal_pct != null
+              ? round1((peso * r.metrics.gordura_corporal_pct) / 100)
+              : null,
+          agua_corporal_kg:
+            peso != null && r.metrics.agua_corporal_pct != null
+              ? round1((peso * r.metrics.agua_corporal_pct) / 100)
+              : null,
+          massa_proteica_kg:
+            peso != null && r.metrics.proteina_pct != null ? round1((peso * r.metrics.proteina_pct) / 100) : null,
+        } as Record<string, number | null>,
+      };
+    });
   }, [progressQuery.data, desiredWeight]);
+
+  const availableFields = useMemo(() => {
+    return HISTORY_FIELDS.filter((field) => reportsWithGoalOverride.some((r) => r.metrics[field.key] != null));
+  }, [reportsWithGoalOverride]);
 
   if (progressQuery.isLoading) {
     return (
@@ -218,11 +287,24 @@ export function BodyDashboardPage() {
 
   const latest = reports[reports.length - 1];
   const first = reports[0];
+  const previousReport = reports.length > 1 ? reports[reports.length - 2] : undefined;
   const goalProgress = computeGoalProgress(first.metrics.peso_kg ?? null, latest.metrics.peso_kg ?? null, desiredWeight);
 
   const imcLevel = latest.metrics.imc != null ? classifyImc(latest.metrics.imc) : null;
-  const gorduraLevel =
-    latest.metrics.gordura_corporal_pct != null ? classifyBodyFatPct(latest.metrics.gordura_corporal_pct) : null;
+
+  const pesoDelta = kpiDelta('peso_kg', latest.metrics.peso_kg, previousReport?.metrics.peso_kg);
+  const imcDelta = kpiDelta('imc', latest.metrics.imc, previousReport?.metrics.imc);
+  const subcutaneaDelta = kpiDelta(
+    'gordura_subcutanea_pct',
+    latest.metrics.gordura_subcutanea_pct,
+    previousReport?.metrics.gordura_subcutanea_pct
+  );
+  const idadeDelta = kpiDelta('idade_corporal', latest.metrics.idade_corporal, previousReport?.metrics.idade_corporal);
+  const pontuacaoDelta = kpiDelta(
+    'pontuacao_corporal',
+    latest.metrics.pontuacao_corporal,
+    previousReport?.metrics.pontuacao_corporal
+  );
 
   const resumoRows = buildResumo(latest);
 
@@ -239,17 +321,31 @@ export function BodyDashboardPage() {
           <div className="kpi-card">
             <span className="kpi-label">Peso atual</span>
             <span className="kpi-value">{latest.metrics.peso_kg ?? '—'} kg</span>
+            {pesoDelta && <span className={`kpi-delta ${pesoDelta.cls}`}>({formatDelta(pesoDelta.delta, 1)} kg)</span>}
           </div>
           <div className="kpi-card">
             <span className="kpi-label">IMC atual</span>
             <span className="kpi-value">{latest.metrics.imc ?? '—'}</span>
+            {imcDelta && <span className={`kpi-delta ${imcDelta.cls}`}>({formatDelta(imcDelta.delta, 1)})</span>}
             {imcLevel && <span className={`kpi-badge kpi-badge-${bodyLevelClass(imcLevel)}`}>{imcLevel}</span>}
           </div>
           <div className="kpi-card">
-            <span className="kpi-label">Gordura corporal</span>
-            <span className="kpi-value">{latest.metrics.gordura_corporal_pct ?? '—'} %</span>
-            {gorduraLevel && (
-              <span className={`kpi-badge kpi-badge-${bodyLevelClass(gorduraLevel)}`}>{gorduraLevel}</span>
+            <span className="kpi-label">Gordura subcutânea</span>
+            <span className="kpi-value">{latest.metrics.gordura_subcutanea_pct ?? '—'} %</span>
+            {subcutaneaDelta && (
+              <span className={`kpi-delta ${subcutaneaDelta.cls}`}>({formatDelta(subcutaneaDelta.delta, 1)} %)</span>
+            )}
+          </div>
+          <div className="kpi-card">
+            <span className="kpi-label">Idade corporal</span>
+            <span className="kpi-value">{latest.metrics.idade_corporal ?? '—'} anos</span>
+            {idadeDelta && <span className={`kpi-delta ${idadeDelta.cls}`}>({formatDelta(idadeDelta.delta, 0)} anos)</span>}
+          </div>
+          <div className="kpi-card">
+            <span className="kpi-label">Pontuação corporal</span>
+            <span className="kpi-value">{latest.metrics.pontuacao_corporal ?? '—'} pts</span>
+            {pontuacaoDelta && (
+              <span className={`kpi-delta ${pontuacaoDelta.cls}`}>({formatDelta(pontuacaoDelta.delta, 0)} pts)</span>
             )}
           </div>
           <div className="kpi-card kpi-card-goal">
@@ -361,8 +457,11 @@ export function BodyDashboardPage() {
             <thead>
               <tr>
                 <th>Data</th>
-                {BODY_METRIC_FIELDS.map((field) => (
+                {HISTORY_FIELDS.map((field) => (
                   <th key={field.key}>{field.label}</th>
+                ))}
+                {BODY_MEASUREMENT_FIELDS.map((field) => (
+                  <th key={field.key}>{field.label} (cm)</th>
                 ))}
               </tr>
             </thead>
@@ -372,7 +471,7 @@ export function BodyDashboardPage() {
                 return (
                   <tr key={report.measured_at}>
                     <td>{report.measured_at}</td>
-                    {BODY_METRIC_FIELDS.map((field) => {
+                    {HISTORY_FIELDS.map((field) => {
                       const value = report.metrics[field.key];
                       const displayValue =
                         field.key === 'controle_peso_kg' && value != null ? value.toFixed(2) : value ?? '—';
@@ -380,6 +479,21 @@ export function BodyDashboardPage() {
                       return (
                         <td key={field.key}>
                           {displayValue}
+                          {trendResult &&
+                            (trendResult.dir === 'up' ? (
+                              <ArrowUp className={trendResult.good ? 'trend-good' : 'trend-bad'} size={12} />
+                            ) : (
+                              <ArrowDown className={trendResult.good ? 'trend-good' : 'trend-bad'} size={12} />
+                            ))}
+                        </td>
+                      );
+                    })}
+                    {BODY_MEASUREMENT_FIELDS.map((field) => {
+                      const value = report.measurements[field.key];
+                      const trendResult = measurementTrendDisplay(value, previous?.measurements[field.key]);
+                      return (
+                        <td key={field.key}>
+                          {value ?? '—'}
                           {trendResult &&
                             (trendResult.dir === 'up' ? (
                               <ArrowUp className={trendResult.good ? 'trend-good' : 'trend-bad'} size={12} />

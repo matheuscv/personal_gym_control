@@ -73,6 +73,24 @@
   color: var(--accent);
 }
 
+.kpi-delta {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.kpi-delta-good {
+  color: var(--ok);
+}
+
+.kpi-delta-bad {
+  color: var(--danger);
+}
+
+.kpi-delta-neutral {
+  color: var(--text);
+}
+
 .kpi-badge {
   align-self: flex-start;
   font-family: var(--mono);
