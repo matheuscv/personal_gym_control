@@ -82,6 +82,9 @@ export function MyGoalPage() {
   const totalJourneyKg =
     initialWeight != null && desiredWeightNum != null ? initialWeight - desiredWeightNum : null;
 
+  // O gráfico precisa de ordem cronológica (mais antigo → mais recente,
+  // esquerda pra direita). A lista abaixo dele é só leitura tabular, onde
+  // faz mais sentido mostrar a medição mais recente primeiro.
   const chartPoints = useMemo(() => {
     const ascending = [...reportsWithWeight].reverse();
     return ascending.map((r) => {
@@ -90,6 +93,8 @@ export function MyGoalPage() {
       return { measured_at: r.measured_at, peso_kg: r.metrics.peso_kg as number, kgLost, pct };
     });
   }, [reportsWithWeight, initialWeight, totalJourneyKg]);
+
+  const chartPointsDescending = useMemo(() => [...chartPoints].reverse(), [chartPoints]);
 
   const canSave = birthDate.trim() !== '' && desiredWeight.trim() !== '';
 
@@ -250,7 +255,7 @@ export function MyGoalPage() {
                 }}
               />
               <ul className="my-goal-chart-list">
-                {chartPoints.map((p) => (
+                {chartPointsDescending.map((p) => (
                   <li key={p.measured_at}>
                     <span>{formatDate(p.measured_at)}</span>
                     <strong>

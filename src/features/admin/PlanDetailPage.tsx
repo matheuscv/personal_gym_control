@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
+import { ChevronUp, ChevronDown, PlayCircle, Trash2 } from 'lucide-react';
+import { youtubeSearchUrl } from '../../lib/youtube';
 import {
   addExerciseToPlan,
   fetchExercises,
@@ -128,6 +129,17 @@ export function PlanDetailPage() {
               </div>
 
               <span className="plan-exercise-name">{item.exercise_name}</span>
+
+              <a
+                className="video-link"
+                href={youtubeSearchUrl(`${item.exercise_name} execução correta`)}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Ver vídeo de ${item.exercise_name} no YouTube`}
+              >
+                <PlayCircle size={15} />
+                Vídeo
+              </a>
 
               <div className="plan-exercise-controls">
                 <input
