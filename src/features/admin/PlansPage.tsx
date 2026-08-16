@@ -29,7 +29,7 @@ export function PlansPage() {
   return (
     <div className="admin-section plans-page">
       <span className="plans-eyebrow">Seus planos</span>
-      <h2 className="section-title">Planos</h2>
+      <h2 className="section-title">Meus Planos</h2>
       <p className="import-hint">
         Planos criados em "Criar Plano" ou importados via JSON aparecem todos aqui. Desative um plano pra
         tirá-lo das sugestões sem apagar o histórico.

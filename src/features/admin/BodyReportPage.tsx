@@ -24,7 +24,7 @@ export function BodyReportPage() {
   return (
     <div className="admin-section reports-page">
       <span className="reports-eyebrow">Composição corporal</span>
-      <h2 className="section-title">Relatórios</h2>
+      <h2 className="section-title">Meus Relatórios</h2>
       <p className="import-hint">
         Relatórios criados em "Criar Relatório" ou importados via JSON aparecem todos aqui.
       </p>

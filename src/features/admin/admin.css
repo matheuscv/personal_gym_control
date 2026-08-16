@@ -40,39 +40,125 @@
   color: var(--accent);
 }
 
-.admin-nav {
+/* Nav de Configuração em 2 níveis: áreas de topo (Meu Objetivo, Meu
+   Treino, Meus Planos, Meus Relatórios) e, pra quem tem sub-páginas
+   (Planos/Relatórios), um grupo com filhos que só aparece quando a área
+   está ativa — visualiza a hierarquia em vez de espalhar tudo numa
+   fileira só. */
+
+.admin-nav-groups {
   display: flex;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 10px;
   flex-wrap: wrap;
   margin-bottom: 28px;
-  padding-bottom: 16px;
+  padding-bottom: 20px;
   border-bottom: 1px solid var(--border);
 }
 
-.admin-nav a {
-  color: var(--text);
+.admin-nav-group[data-has-children='true'] {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 4px;
+  transition: border-color 0.2s ease;
+}
+
+.admin-nav-group[data-has-children='true'][data-active='true'] {
+  border-color: var(--accent-border);
+}
+
+.admin-nav-tile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
   text-decoration: none;
   font-family: var(--heading);
   font-size: 12.5px;
+  font-weight: 600;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  padding: 9px 16px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
+  color: var(--text);
   background: var(--panel);
+  border: 1px solid var(--border);
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
-.admin-nav a.active {
+.admin-nav-group[data-has-children='true'] .admin-nav-tile {
+  border: none;
+  background: transparent;
+}
+
+.admin-nav-tile:hover {
+  border-color: var(--accent-border);
+  color: var(--text-h);
+}
+
+.admin-nav-group[data-active='true'] .admin-nav-tile {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+.admin-nav-chevron {
+  transition: transform 0.2s ease;
+}
+
+.admin-nav-group[data-active='true'] .admin-nav-chevron {
+  transform: rotate(180deg);
+}
+
+.admin-nav-children {
+  display: flex;
+  gap: 6px;
+  padding: 8px 8px 4px;
+  animation: admin-nav-children-in 0.2s ease both;
+}
+
+@keyframes admin-nav-children-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.admin-nav-child {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 7px 12px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.admin-nav-child:hover {
+  border-color: var(--accent-border);
+  color: var(--text-h);
+}
+
+.admin-nav-child.active {
   background: var(--accent-bg);
   border-color: var(--accent-border);
   color: var(--accent);
-  font-weight: 600;
+  font-weight: 700;
 }
 
-.admin-nav a:hover:not(.active) {
-  border-color: var(--accent-border);
-  color: var(--text-h);
+@media (prefers-reduced-motion: reduce) {
+  .admin-nav-children {
+    animation: none;
+  }
 }
 
 .admin-section h2 {
