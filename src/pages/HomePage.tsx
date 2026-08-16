@@ -63,17 +63,10 @@ export function HomePage() {
             <p>Acompanhe sua carga ao longo do tempo.</p>
           </Link>
         )}
-        {IS_ANDROID ? (
-          <div className="welcome-card disabled" title="Em breve">
-            <span className="section-title">Evolução Corporal</span>
-            <p>Em breve.</p>
-          </div>
-        ) : (
-          <Link to="/evolucao-corporal" className="welcome-card">
-            <span className="section-title">Evolução Corporal</span>
-            <p>Veja seus índices de composição corporal.</p>
-          </Link>
-        )}
+        <Link to="/evolucao-corporal" className="welcome-card">
+          <span className="section-title">Evolução Corporal</span>
+          <p>Veja seus índices de composição corporal.</p>
+        </Link>
       </div>
 
       <h2 className="section-title">Dicas</h2>
