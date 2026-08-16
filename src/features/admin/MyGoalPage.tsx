@@ -36,6 +36,13 @@ export function MyGoalPage() {
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
+  // DIAGNÓSTICO TEMPORÁRIO — identifica se o componente está remontando ou
+  // se algo mais está revertendo isEditing logo após o clique em "Editar".
+  // Remover assim que o bug do botão Editar Meu Objetivo for confirmado.
+  const instanceIdRef = useRef(Math.random().toString(36).slice(2, 8));
+  // eslint-disable-next-line no-console
+  console.log('[MyGoalPage] render — instance=', instanceIdRef.current, 'isEditing=', isEditing);
+
   // Só sincroniza o form com o servidor UMA vez, na primeira vez que os
   // dados chegam — usa ref (não state) de propósito, pra garantir que um
   // refetch em segundo plano (ex: invalidateQueries do próprio save) nunca
@@ -46,6 +53,13 @@ export function MyGoalPage() {
     if (goalQuery.isSuccess && !didInitRef.current) {
       didInitRef.current = true;
       const hasGoal = !!(goalQuery.data?.birth_date || goalQuery.data?.desired_weight_kg != null);
+      // eslint-disable-next-line no-console
+      console.log(
+        '[MyGoalPage] init effect firing — instance=',
+        instanceIdRef.current,
+        'hasGoal=',
+        hasGoal
+      );
       setBirthDate(goalQuery.data?.birth_date ?? '');
       setDesiredWeight(goalQuery.data?.desired_weight_kg != null ? String(goalQuery.data.desired_weight_kg) : '');
       setIsEditing(!hasGoal);
@@ -157,7 +171,15 @@ export function MyGoalPage() {
             {saveMutation.isPending ? 'Salvando...' : 'Salvar objetivo'}
           </button>
         ) : (
-          <button type="button" className="my-goal-edit-btn" onClick={() => setIsEditing(true)}>
+          <button
+            type="button"
+            className="my-goal-edit-btn"
+            onClick={() => {
+              // eslint-disable-next-line no-console
+              console.log('[MyGoalPage] Editar clicado — instance=', instanceIdRef.current);
+              setIsEditing(true);
+            }}
+          >
             <PencilLine size={13} />
             Editar Meu Objetivo
           </button>
