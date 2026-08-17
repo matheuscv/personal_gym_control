@@ -30,6 +30,127 @@
   color: var(--accent);
 }
 
+.today-hero {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 24px;
+  margin-bottom: 20px;
+  border-radius: 16px;
+  border: 1px solid var(--accent-border);
+  border-left: 4px solid var(--accent);
+  background: linear-gradient(135deg, var(--accent-bg), var(--panel) 60%);
+}
+
+.today-hero-done {
+  border-color: var(--ok);
+  border-left-color: var(--ok);
+  background: linear-gradient(135deg, var(--ok-bg), var(--panel) 60%);
+}
+
+.today-hero-empty {
+  border-color: var(--border);
+  border-left-color: var(--border);
+  background: var(--panel);
+}
+
+.today-hero-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.today-hero-done .today-hero-icon-wrap {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+.today-hero-empty .today-hero-icon-wrap {
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+.today-hero-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.today-hero-eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.today-hero-done .today-hero-eyebrow {
+  color: var(--ok);
+}
+
+.today-hero-plan {
+  font-family: var(--heading);
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--text-h);
+  margin: 0;
+}
+
+.today-hero-message {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.55;
+  margin: 0;
+  max-width: 56ch;
+}
+
+.today-hero-message a {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.today-hero-done .today-hero-message a {
+  color: var(--ok);
+}
+
+.today-hero-stats {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 2px 0 2px;
+}
+
+.today-hero-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-h);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 10px;
+}
+
+@media (max-width: 520px) {
+  .today-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
+
 .welcome-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

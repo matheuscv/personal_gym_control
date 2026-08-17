@@ -155,6 +155,34 @@ export async function deleteSession(sessionId: number): Promise<void> {
   if (error) throw error;
 }
 
+interface TodaySessionRow {
+  completed_at: string | null;
+  workout_session_sets: { completed: boolean }[];
+}
+
+export interface TodaySessionStatus {
+  completedAt: string | null;
+  percent: number;
+}
+
+// Versão somente-leitura de resolveSession — usada pelo card da Home só
+// pra checar o status do dia, sem criar uma sessão (e suas séries) à toa
+// toda vez que a Home é aberta.
+export async function fetchTodaySessionStatus(planId: number, dateStr: string): Promise<TodaySessionStatus | null> {
+  const { data, error } = await supabase
+    .from('workout_sessions')
+    .select('completed_at, workout_session_sets (completed)')
+    .eq('plan_id', planId)
+    .eq('session_date', dateStr)
+    .maybeSingle<TodaySessionRow>();
+  if (error) throw error;
+  if (!data) return null;
+
+  const sets = data.workout_session_sets ?? [];
+  const percent = sets.length === 0 ? 0 : Math.round((sets.filter((s) => s.completed).length / sets.length) * 100);
+  return { completedAt: data.completed_at, percent };
+}
+
 interface MonthSessionRow {
   session_date: string;
   workout_session_sets: { completed: boolean }[];
