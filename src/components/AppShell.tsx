@@ -4,11 +4,12 @@ import { ThemeToggle } from '../features/theme/ThemeToggle';
 import { UserMenu } from './UserMenu';
 import './AppShell.css';
 
-// Evolução Treino ainda está sendo refinada antes de liberar para uso
-// real — por enquanto fica ativa só na web (onde dá pra continuar
-// iterando sem depender de gerar um novo APK a cada ajuste). Evolução
-// Corporal já foi liberada pro Android.
+// Evolução Treino depende de dados que só se configuram em Configuração
+// (admin), área exclusiva da web — por isso fica sempre indisponível no
+// Android, não é uma limitação temporária. Evolução Corporal já foi
+// liberada pro Android.
 const IS_ANDROID = import.meta.env.VITE_PLATFORM === 'android';
+const ANDROID_UNAVAILABLE_HINT = 'Disponível apenas na versão web';
 
 const NAV_ITEMS: { to: string; label: string; end?: boolean; disabled?: boolean }[] = [
   { to: '/', label: 'Home', end: true },
@@ -39,7 +40,7 @@ export function AppShell() {
         <nav className="app-nav">
           {NAV_ITEMS.map((item) =>
             item.disabled ? (
-              <span key={item.to} className="nav-disabled" title="Em breve">
+              <span key={item.to} className="nav-disabled" title={ANDROID_UNAVAILABLE_HINT}>
                 {item.label}
               </span>
             ) : (
