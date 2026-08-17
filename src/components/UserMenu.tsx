@@ -4,8 +4,6 @@ import { ChevronDown, LogOut, Settings, User, UserPlus } from 'lucide-react';
 import { useAuth } from '../features/auth/auth-context';
 import './UserMenu.css';
 
-const IS_ANDROID = import.meta.env.VITE_PLATFORM === 'android';
-
 function initialsFor(email: string | undefined, displayName: unknown): string {
   const name = typeof displayName === 'string' && displayName.trim() ? displayName.trim() : email;
   if (!name) return '?';
@@ -68,12 +66,10 @@ export function UserMenu() {
             <User size={16} />
             Minha conta
           </Link>
-          {!IS_ANDROID && (
-            <Link to="/admin" role="menuitem" className="user-menu-item" onClick={close}>
-              <Settings size={16} />
-              Configuração
-            </Link>
-          )}
+          <Link to="/admin" role="menuitem" className="user-menu-item" onClick={close}>
+            <Settings size={16} />
+            Configuração
+          </Link>
           <Link to="/convidar" role="menuitem" className="user-menu-item" onClick={close}>
             <UserPlus size={16} />
             Convidar alguém

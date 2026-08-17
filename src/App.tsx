@@ -12,22 +12,20 @@ import { DashboardPage } from './features/dashboard/DashboardPage';
 import { BodyDashboardPage } from './features/dashboard/BodyDashboardPage';
 import './App.css';
 
-// As telas admin (CRUD/importador) são exclusivas da versão web. Ao construir
-// para Android (VITE_PLATFORM=android), a condição abaixo é resolvida em
-// tempo de build (Vite substitui import.meta.env.VITE_PLATFORM por um
-// literal), permitindo que o Rollup elimine os import() dinâmicos junto —
-// as telas admin nem entram no bundle, não é apenas ocultação em runtime.
+// Configuração agora existe no Android também, mas só com Meu Objetivo e
+// Meu Treino — Meus Planos e Meus Relatórios (CRUD/importador) continuam
+// exclusivos da web. Ao construir para Android (VITE_PLATFORM=android), a
+// condição abaixo é resolvida em tempo de build (Vite substitui
+// import.meta.env.VITE_PLATFORM por um literal), permitindo que o Rollup
+// elimine os import() dinâmicos dessas telas junto — nem entram no bundle,
+// não é apenas ocultação em runtime.
 const IS_ANDROID = import.meta.env.VITE_PLATFORM === 'android';
 
-const AdminLayout = IS_ANDROID
-  ? null
-  : lazy(() => import('./features/admin/AdminLayout').then((m) => ({ default: m.AdminLayout })));
-const MyGoalPage = IS_ANDROID
-  ? null
-  : lazy(() => import('./features/admin/MyGoalPage').then((m) => ({ default: m.MyGoalPage })));
-const MySchedulePage = IS_ANDROID
-  ? null
-  : lazy(() => import('./features/admin/MySchedulePage').then((m) => ({ default: m.MySchedulePage })));
+const AdminLayout = lazy(() => import('./features/admin/AdminLayout').then((m) => ({ default: m.AdminLayout })));
+const MyGoalPage = lazy(() => import('./features/admin/MyGoalPage').then((m) => ({ default: m.MyGoalPage })));
+const MySchedulePage = lazy(() =>
+  import('./features/admin/MySchedulePage').then((m) => ({ default: m.MySchedulePage }))
+);
 const PlansPage = IS_ANDROID
   ? null
   : lazy(() => import('./features/admin/PlansPage').then((m) => ({ default: m.PlansPage })));
@@ -68,29 +66,26 @@ function App() {
             <Route path="/evolucao-corporal" element={<BodyDashboardPage />} />
             <Route path="/conta" element={<AccountPage />} />
             <Route path="/convidar" element={<InvitePage />} />
-            {AdminLayout &&
-              MyGoalPage &&
-              MySchedulePage &&
-              PlansPage &&
-              PlanDetailPage &&
-              ImportPlanPage &&
-              CreatePlanPage &&
-              BodyReportPage &&
-              CreateBodyReportPage &&
-              ImportBodyReportPage && (
-                <Route path="/admin" element={<AdminLayout />}>
-                  <Route index element={<Navigate to="goal" replace />} />
-                  <Route path="goal" element={<MyGoalPage />} />
-                  <Route path="schedule" element={<MySchedulePage />} />
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<Navigate to="goal" replace />} />
+              <Route path="goal" element={<MyGoalPage />} />
+              <Route path="schedule" element={<MySchedulePage />} />
+              {PlansPage && PlanDetailPage && ImportPlanPage && CreatePlanPage && (
+                <>
                   <Route path="plans" element={<PlansPage />} />
                   <Route path="plans/:planId" element={<PlanDetailPage />} />
                   <Route path="import" element={<ImportPlanPage />} />
                   <Route path="create-plan" element={<CreatePlanPage />} />
+                </>
+              )}
+              {BodyReportPage && CreateBodyReportPage && ImportBodyReportPage && (
+                <>
                   <Route path="body-report" element={<BodyReportPage />} />
                   <Route path="body-report/create" element={<CreateBodyReportPage />} />
                   <Route path="body-report/import" element={<ImportBodyReportPage />} />
-                </Route>
+                </>
               )}
+            </Route>
           </Route>
         </Route>
       </Routes>

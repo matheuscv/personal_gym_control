@@ -15,29 +15,37 @@ interface AdminNavArea {
   children?: AdminNavChild[];
 }
 
+// Meus Planos e Meus Relatórios (CRUD/importador) continuam exclusivos
+// da web — no Android, Configuração só mostra Meu Objetivo e Meu Treino.
+const IS_ANDROID = import.meta.env.VITE_PLATFORM === 'android';
+
 const ADMIN_NAV: AdminNavArea[] = [
   { to: '/admin/goal', label: 'Meu Objetivo', icon: Target, matchPrefixes: ['/admin/goal'] },
   { to: '/admin/schedule', label: 'Meu Treino', icon: CalendarDays, matchPrefixes: ['/admin/schedule'] },
-  {
-    to: '/admin/plans',
-    label: 'Meus Planos',
-    icon: ClipboardList,
-    matchPrefixes: ['/admin/plans', '/admin/import', '/admin/create-plan'],
-    children: [
-      { to: '/admin/import', label: 'Importar Plano' },
-      { to: '/admin/create-plan', label: 'Criar Plano' },
-    ],
-  },
-  {
-    to: '/admin/body-report',
-    label: 'Meus Relatórios',
-    icon: HeartPulse,
-    matchPrefixes: ['/admin/body-report'],
-    children: [
-      { to: '/admin/body-report/import', label: 'Importar Relatório' },
-      { to: '/admin/body-report/create', label: 'Criar Relatório' },
-    ],
-  },
+  ...(IS_ANDROID
+    ? []
+    : [
+        {
+          to: '/admin/plans',
+          label: 'Meus Planos',
+          icon: ClipboardList,
+          matchPrefixes: ['/admin/plans', '/admin/import', '/admin/create-plan'],
+          children: [
+            { to: '/admin/import', label: 'Importar Plano' },
+            { to: '/admin/create-plan', label: 'Criar Plano' },
+          ],
+        },
+        {
+          to: '/admin/body-report',
+          label: 'Meus Relatórios',
+          icon: HeartPulse,
+          matchPrefixes: ['/admin/body-report'],
+          children: [
+            { to: '/admin/body-report/import', label: 'Importar Relatório' },
+            { to: '/admin/body-report/create', label: 'Criar Relatório' },
+          ],
+        },
+      ]),
 ];
 
 function isPrefixActive(pathname: string, prefix: string): boolean {
