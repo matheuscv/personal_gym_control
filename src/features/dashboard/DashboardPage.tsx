@@ -52,20 +52,25 @@ export function DashboardPage() {
       <h1>Evolução do treino</h1>
       <div className="dashboard-page">
         {progressQuery.data.map((exercise) => {
-          const best = Math.max(...exercise.points.map((p) => p.maxWeight));
+          const best = Math.max(...exercise.points.map((p) => p.value));
+          const isDuration = exercise.metric === 'duration';
+          const unit = isDuration ? 's' : 'kg';
+          const label = isDuration ? 'Tempo máximo (s)' : 'Carga máxima (kg)';
           return (
             <div key={exercise.exerciseId} className="progress-card">
               <div className="progress-header">
                 <h3>{exercise.exerciseName}</h3>
-                <span className="progress-best">{best} kg</span>
+                <span className="progress-best">
+                  {best} {unit}
+                </span>
               </div>
               <Line
                 data={{
                   labels: exercise.points.map((p) => p.date),
                   datasets: [
                     {
-                      label: 'Carga máxima (kg)',
-                      data: exercise.points.map((p) => p.maxWeight),
+                      label,
+                      data: exercise.points.map((p) => p.value),
                       borderColor: accentColor,
                       backgroundColor: accentColor,
                       tension: 0.25,
