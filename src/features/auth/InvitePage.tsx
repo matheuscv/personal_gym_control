@@ -5,6 +5,11 @@ import { z } from 'zod';
 import { Check, Copy } from 'lucide-react';
 import './InvitePage.css';
 
+// Link de convite sempre aponta pra produção, mesmo gerado a partir do
+// servidor local (window.location.origin mostraria localhost) — mesma
+// URL usada como site_url no Supabase Auth (ver supabase/config.toml).
+const APP_URL = 'https://personalgymcontrol.vercel.app';
+
 const inviteSchema = z.object({
   email: z.string().email('E-mail inválido'),
 });
@@ -18,7 +23,7 @@ export function InvitePage() {
 
   const onGenerate = form.handleSubmit(({ email }) => {
     setCopied(false);
-    setLink(`${window.location.origin}/login?convite=${encodeURIComponent(email)}`);
+    setLink(`${APP_URL}/login?convite=${encodeURIComponent(email)}`);
   });
 
   async function handleCopy() {
