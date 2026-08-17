@@ -38,16 +38,14 @@ export function HomePage() {
     queryKey: ['scheduled-plan', todayKey],
     queryFn: () => fetchScheduledPlanForDate(new Date()),
   });
-  const todayPlanId = todayScheduleQuery.data?.plan_id ?? null;
   const todayStatusQuery = useQuery({
-    queryKey: ['today-session-status', todayPlanId, todayKey],
-    queryFn: () => fetchTodaySessionStatus(todayPlanId!, todayKey),
-    enabled: todayPlanId != null,
+    queryKey: ['today-session-status', todayKey],
+    queryFn: () => fetchTodaySessionStatus(todayKey),
   });
 
   const name = greetingName(user?.email, user?.user_metadata?.display_name);
 
-  const isLoadingToday = todayScheduleQuery.isLoading || (todayPlanId != null && todayStatusQuery.isLoading);
+  const isLoadingToday = todayScheduleQuery.isLoading || todayStatusQuery.isLoading;
   const isCompleted = todayStatusQuery.data?.completedAt != null;
   const heroState = !todayScheduleQuery.data ? 'empty' : isCompleted ? 'done' : 'pending';
 

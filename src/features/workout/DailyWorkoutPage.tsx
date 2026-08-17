@@ -19,6 +19,7 @@ import {
   completeSession,
   deleteSession,
   fetchScheduledPlanForDate,
+  fetchSessionForDate,
   loadDailyWorkout,
   reopenSession,
   updateSessionSet,
@@ -60,14 +61,24 @@ export function DailyWorkoutPage() {
   const targetDate = useMemo(() => addDays(new Date(), dateOffset), [dateOffset]);
   const dateKey = useMemo(() => format(targetDate, 'yyyy-MM-dd'), [targetDate]);
 
+  // Uma sessão já existente pra essa data manda no plano de fato usado
+  // nesse dia — só cai pra agenda ao vivo se ainda não existe sessão
+  // (dia novo). Assim, mudar a agenda depois não "perde" nem duplica um
+  // dia que já tinha treino registrado.
+  const dateSessionQuery = useQuery({
+    queryKey: ['session-for-date', dateKey],
+    queryFn: () => fetchSessionForDate(dateKey),
+  });
   const scheduleQuery = useQuery({
     queryKey: ['scheduled-plan', dateKey],
     queryFn: () => fetchScheduledPlanForDate(targetDate),
   });
-  const planId = scheduleQuery.data?.plan_id ?? null;
+  const planId = dateSessionQuery.data?.planId ?? scheduleQuery.data?.plan_id ?? null;
+  const hasNoWorkout =
+    !dateSessionQuery.isLoading && !scheduleQuery.isLoading && !dateSessionQuery.data && !scheduleQuery.data;
 
   const workoutQuery = useQuery({
-    queryKey: ['daily-workout', planId, dateKey],
+    queryKey: ['daily-workout', dateKey],
     queryFn: () => loadDailyWorkout(planId!, targetDate),
     enabled: planId != null,
   });
@@ -162,17 +173,28 @@ export function DailyWorkoutPage() {
   const isFutureDay = dateOffset > 0;
   const isLocked = completedAt != null || isFutureDay;
 
+  // Se o plano (ou o exercício dentro dele) for excluído depois que a
+  // série já existia, plan_exercise_id vira null (on delete set null) —
+  // pra um treino já concluído/travado isso não pode fazer a série
+  // "sumir" da tela, então cai pra agrupar por exercise_id (estável,
+  // exercícios não são apagados junto com o plano).
   const setsByExercise = useMemo(() => {
+    const exerciseIdToPlanExerciseId = new Map<number, number>();
+    for (const pe of workoutQuery.data?.planExercises ?? []) {
+      exerciseIdToPlanExerciseId.set(pe.exercise_id, pe.id);
+    }
+
     const map = new Map<number, SessionSet[]>();
     for (const set of sets) {
-      if (set.plan_exercise_id == null) continue;
-      const list = map.get(set.plan_exercise_id) ?? [];
+      const key = set.plan_exercise_id ?? exerciseIdToPlanExerciseId.get(set.exercise_id);
+      if (key == null) continue;
+      const list = map.get(key) ?? [];
       list.push(set);
-      map.set(set.plan_exercise_id, list);
+      map.set(key, list);
     }
     for (const list of map.values()) list.sort((a, b) => a.set_number - b.set_number);
     return map;
-  }, [sets]);
+  }, [sets, workoutQuery.data?.planExercises]);
 
   async function persist(setId: number, patch: SessionSetPatch) {
     setSets((prev) => prev.map((s) => (s.id === setId ? { ...s, ...patch } : s)));
@@ -199,7 +221,16 @@ export function DailyWorkoutPage() {
     <div className="daily-workout">
       <div className="workout-top">
         <div>
-          <span className="workout-eyebrow">Treino do dia</span>
+          <span className="workout-eyebrow">
+            Treino do{' '}
+            {dateOffset === 0 ? (
+              'dia'
+            ) : (
+              <button type="button" className="workout-eyebrow-link" onClick={() => setDateOffset(0)}>
+                dia
+              </button>
+            )}
+          </span>
           <div className="workout-day-nav">
             <button
               type="button"
@@ -221,9 +252,10 @@ export function DailyWorkoutPage() {
               <ChevronRight size={18} />
             </button>
           </div>
-          {scheduleQuery.data && (
+          {(workoutQuery.data?.planName || scheduleQuery.data?.plan_name) && (
             <p className="workout-plan-label">
-              Plano selecionado para o dia: <strong>{scheduleQuery.data.plan_name}</strong>
+              Plano selecionado para o dia:{' '}
+              <strong>{workoutQuery.data?.planName ?? scheduleQuery.data?.plan_name}</strong>
             </p>
           )}
         </div>
@@ -244,9 +276,9 @@ export function DailyWorkoutPage() {
         </p>
       )}
 
-      {scheduleQuery.isLoading && <p className="workout-status">Carregando...</p>}
+      {(scheduleQuery.isLoading || dateSessionQuery.isLoading) && <p className="workout-status">Carregando...</p>}
 
-      {!scheduleQuery.isLoading && !scheduleQuery.data && (
+      {hasNoWorkout && (
         <EmptyState
           icon={<CalendarOff size={34} />}
           title={dateOffset === 0 ? 'Nenhum treino agendado para hoje' : 'Nenhum treino agendado para este dia'}
@@ -255,7 +287,8 @@ export function DailyWorkoutPage() {
               ? 'Configure sua agenda semanal pela versão web em Configuração → Meu Treino.'
               : 'Configure sua agenda semanal em Configuração → Meu Treino para escolher qual plano treinar em cada dia.'
           }
-          {...(!IS_ANDROID && { actionLabel: 'Configurar Meu Treino', actionTo: '/admin/schedule' })}
+          {...(!IS_ANDROID &&
+            dateOffset >= 0 && { actionLabel: 'Configurar Meu Treino', actionTo: '/admin/schedule' })}
         />
       )}
 

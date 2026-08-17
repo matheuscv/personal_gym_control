@@ -28,6 +28,11 @@ export interface SessionSet {
 export interface DailyWorkout {
   sessionId: number;
   completedAt: string | null;
+  // Plano de fato usado nesse dia — vem da sessão já existente quando
+  // houver uma (pode divergir do que está agendado hoje na semana, se a
+  // agenda mudou depois), não da agenda ao vivo.
+  planId: number | null;
+  planName: string;
   planExercises: PlanExercise[];
   sets: SessionSet[];
 }
