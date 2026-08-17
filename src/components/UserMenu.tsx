@@ -5,7 +5,6 @@ import { ChevronDown, LogOut, Settings2, Smartphone, UserRound, UserRoundPlus } 
 import { useAuth } from '../features/auth/auth-context';
 import './UserMenu.css';
 
-const IS_ANDROID = import.meta.env.VITE_PLATFORM === 'android';
 const ANDROID_APK_URL =
   'https://github.com/matheuscv/personal_gym_control/releases/download/android-apk/personal-gym-control.apk';
 const ANDROID_RELEASE_API_URL =
@@ -43,7 +42,7 @@ export function UserMenu() {
   const androidVersionQuery = useQuery({
     queryKey: ['android-apk-version'],
     queryFn: fetchLatestAndroidVersion,
-    enabled: !IS_ANDROID && open,
+    enabled: open,
     staleTime: 1000 * 60 * 60,
     retry: 2,
   });
@@ -117,27 +116,23 @@ export function UserMenu() {
             Convidar alguém
           </Link>
 
-          {!IS_ANDROID && (
-            <>
-              <span className="user-menu-divider" />
-              <a
-                href={ANDROID_APK_URL}
-                role="menuitem"
-                className="user-menu-item"
-                onClick={close}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <span className="user-menu-item-icon">
-                  <Smartphone size={15} />
-                </span>
-                Baixar app Android
-                {androidVersionQuery.data && (
-                  <span className="user-menu-item-version">(v{androidVersionQuery.data})</span>
-                )}
-              </a>
-            </>
-          )}
+          <span className="user-menu-divider" />
+          <a
+            href={ANDROID_APK_URL}
+            role="menuitem"
+            className="user-menu-item"
+            onClick={close}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span className="user-menu-item-icon">
+              <Smartphone size={15} />
+            </span>
+            Baixar app Android
+            {androidVersionQuery.data && (
+              <span className="user-menu-item-version">(v{androidVersionQuery.data})</span>
+            )}
+          </a>
 
           <span className="user-menu-divider" />
           <button
