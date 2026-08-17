@@ -75,6 +75,9 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            // So a release precisa sumir (ela que "dona" o asset e sofre a
+            // corrida ao sobrescrever) — a tag pode continuar existindo e
+            // ser reaproveitada pela release nova sem conflito.
             try {
               const release = await github.rest.repos.getReleaseByTag({
                 owner: context.repo.owner,
@@ -88,15 +91,6 @@ jobs:
               });
             } catch (e) {
               if (e.status !== 404) throw e;
-            }
-            try {
-              await github.rest.git.deleteRef({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                ref: 'tags/android-apk',
-              });
-            } catch (e) {
-              if (e.status !== 404 && e.status !== 422) throw e;
             }
 
       - name: Publish APK to GitHub Release
