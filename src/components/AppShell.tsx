@@ -4,17 +4,12 @@ import { ThemeToggle } from '../features/theme/ThemeToggle';
 import { UserMenu } from './UserMenu';
 import './AppShell.css';
 
-// Evolução Treino depende de dados que só se configuram em Configuração
-// (admin), área exclusiva da web — por isso fica sempre indisponível no
-// Android, não é uma limitação temporária. Evolução Corporal já foi
-// liberada pro Android.
 const IS_ANDROID = import.meta.env.VITE_PLATFORM === 'android';
-const ANDROID_UNAVAILABLE_HINT = 'Disponível apenas na versão web';
 
-const NAV_ITEMS: { to: string; label: string; end?: boolean; disabled?: boolean }[] = [
+const NAV_ITEMS: { to: string; label: string; end?: boolean }[] = [
   { to: '/', label: 'Home', end: true },
   { to: '/treino', label: 'Treino do dia' },
-  { to: '/evolucao', label: 'Evolução Treino', disabled: IS_ANDROID },
+  { to: '/evolucao', label: 'Evolução Treino' },
   { to: '/evolucao-corporal', label: 'Evolução Corporal' },
 ];
 
@@ -38,22 +33,16 @@ export function AppShell() {
           </div>
         </header>
         <nav className="app-nav">
-          {NAV_ITEMS.map((item) =>
-            item.disabled ? (
-              <span key={item.to} className="nav-disabled" title={ANDROID_UNAVAILABLE_HINT}>
-                {item.label}
-              </span>
-            ) : (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) => (isActive ? 'active' : '')}
-              >
-                {item.label}
-              </NavLink>
-            )
-          )}
+          {NAV_ITEMS.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) => (isActive ? 'active' : '')}
+            >
+              {item.label}
+            </NavLink>
+          ))}
         </nav>
       </div>
       <main className="app-content">

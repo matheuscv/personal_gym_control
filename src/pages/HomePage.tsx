@@ -8,11 +8,6 @@ import { fetchActivePlans, fetchScheduledPlanForDate, fetchTodaySessionStatus } 
 import { WorkoutCalendar } from '../components/WorkoutCalendar';
 import './HomePage.css';
 
-const IS_ANDROID = import.meta.env.VITE_PLATFORM === 'android';
-// Evolução Treino depende de dados que só se configuram em Configuração
-// (admin), área exclusiva da web — não é uma limitação temporária.
-const ANDROID_UNAVAILABLE_HINT = 'Disponível apenas na versão web';
-
 const TIPS = [
   'Beba água antes, durante e depois do treino.',
   'Aqueça por 5–10 minutos antes de começar — reduz o risco de lesão.',
@@ -127,17 +122,10 @@ export function HomePage() {
       </div>
 
       <div className="welcome-cards">
-        {IS_ANDROID ? (
-          <div className="welcome-card disabled" title={ANDROID_UNAVAILABLE_HINT}>
-            <span className="section-title">Evolução Treino</span>
-            <p>{ANDROID_UNAVAILABLE_HINT}.</p>
-          </div>
-        ) : (
-          <Link to="/evolucao" className="welcome-card">
-            <span className="section-title">Evolução Treino</span>
-            <p>Acompanhe sua carga ao longo do tempo.</p>
-          </Link>
-        )}
+        <Link to="/evolucao" className="welcome-card">
+          <span className="section-title">Evolução Treino</span>
+          <p>Acompanhe sua carga ao longo do tempo.</p>
+        </Link>
         <Link to="/evolucao-corporal" className="welcome-card">
           <span className="section-title">Evolução Corporal</span>
           <p>Veja seus índices de composição corporal.</p>
