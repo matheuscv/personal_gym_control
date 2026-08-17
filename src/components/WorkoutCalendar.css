@@ -1,8 +1,8 @@
 .workout-calendar {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 18px 20px;
+  background: linear-gradient(150deg, var(--accent-bg), var(--panel) 55%);
+  border: 1px solid var(--accent-border);
+  border-radius: 18px;
+  padding: 20px 22px 22px;
   margin-bottom: 28px;
 }
 
@@ -12,7 +12,7 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .workout-calendar-eyebrow {
@@ -45,15 +45,15 @@
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  border: 1px solid var(--border);
-  background: transparent;
+  border: 1px solid var(--accent-border);
+  background: var(--panel);
   color: var(--text);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .workout-calendar-nav-btn:hover:not(:disabled) {
-  border-color: var(--accent-border);
+  border-color: var(--accent);
   color: var(--accent);
 }
 
@@ -68,7 +68,7 @@
   gap: 16px;
   padding: 14px 16px;
   margin-bottom: 18px;
-  background: var(--panel-2);
+  background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 12px;
 }
@@ -111,16 +111,17 @@
 .workout-calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 4px;
+  gap: 6px;
 }
 
 .workout-calendar-weekday {
   font-family: var(--mono);
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text);
+  opacity: 0.6;
   text-align: center;
   padding-bottom: 8px;
 }
@@ -129,75 +130,108 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 6px 2px 8px;
-  border-radius: 8px;
-  min-height: 54px;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 2px;
+  border-radius: 10px;
+  min-height: 44px;
+  text-decoration: none;
+  border: 1.5px solid transparent;
+  transition: transform 0.15s ease, filter 0.15s ease;
 }
 
 .workout-calendar-cell.blank {
   min-height: 0;
 }
 
-.workout-calendar-cell.is-workout-day {
-  background: var(--panel-2);
-}
-
-.workout-calendar-cell.is-today {
-  outline: 1.5px solid var(--accent-border);
-  outline-offset: -1.5px;
-}
-
 .workout-calendar-daynum {
   font-family: var(--mono);
-  font-size: 11.5px;
+  font-size: 12px;
+  line-height: 1;
   color: var(--text);
 }
 
-.workout-calendar-cell.is-workout-day .workout-calendar-daynum {
-  font-weight: 700;
-  color: var(--text-h);
-}
-
-.workout-calendar-percent {
+.workout-calendar-percent-inline {
   font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 700;
-  padding: 1px 7px;
-  border-radius: 20px;
-  text-decoration: none;
-  border: 1px solid;
+  font-weight: 800;
+  font-size: 9.5px;
+  line-height: 1;
 }
 
-a.workout-calendar-percent {
-  cursor: pointer;
-  transition: transform 0.15s ease;
+.workout-calendar-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.55;
 }
 
-a.workout-calendar-percent:hover {
-  transform: translateY(-1px);
+/* Dia sem treino agendado: apagado, some no fundo */
+.workout-calendar-cell.level-none .workout-calendar-daynum {
+  opacity: 0.4;
 }
 
-.workout-calendar-percent-ok {
-  background: var(--ok-bg);
-  color: var(--ok);
-  border-color: var(--ok);
-}
-
-.workout-calendar-percent-accent {
-  background: var(--accent-bg);
-  color: var(--accent);
+/* Dia de treino no futuro: contorno tracejado, aguardando */
+.workout-calendar-cell.level-scheduled {
   border-color: var(--accent-border);
+  border-style: dashed;
 }
 
-.workout-calendar-percent-neutral {
-  background: var(--panel);
-  color: var(--text);
+.workout-calendar-cell.level-scheduled .workout-calendar-daynum {
+  color: var(--text-h);
+  font-weight: 700;
+}
+
+/* Dia de treino já passado, sem nada realizado */
+.workout-calendar-cell.level-zero {
+  background: var(--panel-2);
   border-color: var(--border);
 }
 
+.workout-calendar-cell.level-zero .workout-calendar-daynum {
+  color: var(--text-h);
+  font-weight: 700;
+}
+
+.workout-calendar-cell.level-zero .workout-calendar-percent-inline {
+  color: var(--text);
+}
+
+/* Dia de treino parcialmente concluído */
+.workout-calendar-cell.level-accent {
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+}
+
+.workout-calendar-cell.level-accent .workout-calendar-daynum,
+.workout-calendar-cell.level-accent .workout-calendar-percent-inline {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* Dia de treino 100% concluído */
+.workout-calendar-cell.level-ok {
+  background: var(--ok-bg);
+  border-color: var(--ok);
+}
+
+.workout-calendar-cell.level-ok .workout-calendar-daynum,
+.workout-calendar-cell.level-ok .workout-calendar-percent-inline {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+a.workout-calendar-cell:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}
+
+.workout-calendar-cell.is-today {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  a.workout-calendar-percent:hover {
+  a.workout-calendar-cell:hover {
     transform: none;
   }
 }

@@ -22,6 +22,13 @@ function greetingName(email: string | undefined, displayName: unknown): string {
   return email?.split('@')[0] ?? 'atleta';
 }
 
+function greetingPeriod(): { article: string; period: string } {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return { article: 'um', period: 'bom dia' };
+  if (hour >= 12 && hour < 18) return { article: 'uma', period: 'boa tarde' };
+  return { article: 'uma', period: 'boa noite' };
+}
+
 function todayLabel(): string {
   const label = format(new Date(), 'EEEE, dd/MM', { locale: ptBR });
   return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
@@ -44,6 +51,7 @@ export function HomePage() {
   });
 
   const name = greetingName(user?.email, user?.user_metadata?.display_name);
+  const greeting = greetingPeriod();
 
   const isLoadingToday = todayScheduleQuery.isLoading || todayStatusQuery.isLoading;
   const isCompleted = todayStatusQuery.data?.completedAt != null;
@@ -52,18 +60,25 @@ export function HomePage() {
   return (
     <section className="welcome-page">
       <p className="welcome-eyebrow">Bem-vindo de volta</p>
-      <h1>Olá, {name}</h1>
+      <h1>
+        Olá, <span className="welcome-name">{name}</span>
+      </h1>
+      <p className="welcome-greeting-sub">
+        Tenha {greeting.article} {greeting.period}!
+      </p>
 
       <div className="welcome-summary">
         {plansQuery.isLoading && <p className="workout-status">Carregando seu plano...</p>}
         {!plansQuery.isLoading && plansQuery.data && plansQuery.data.length > 0 && (
-          <p>
-            Plano{plansQuery.data.length > 1 ? 's' : ''} ativo{plansQuery.data.length > 1 ? 's' : ''}:{' '}
+          <p className="welcome-summary-pill">
+            <span className="welcome-summary-label">
+              Plano{plansQuery.data.length > 1 ? 's' : ''} ativo{plansQuery.data.length > 1 ? 's' : ''}
+            </span>
             <strong>{plansQuery.data.map((p) => p.name).join(', ')}</strong>
           </p>
         )}
         {!plansQuery.isLoading && (!plansQuery.data || plansQuery.data.length === 0) && (
-          <p>
+          <p className="welcome-summary-hint">
             Você ainda não tem um plano de treino ativo. Crie um em{' '}
             <Link to="/admin">Configuração</Link>.
           </p>
@@ -132,6 +147,7 @@ export function HomePage() {
 
       <WorkoutCalendar />
 
+      <span className="welcome-eyebrow">Boas práticas</span>
       <h2 className="section-title">Dicas</h2>
       <ul className="tips-list">
         {TIPS.map((tip) => (

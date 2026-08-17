@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Eye, Save, PencilLine, X } from 'lucide-react';
-import { format } from 'date-fns';
 import { useAuth } from '../auth/auth-context';
 import { bodyReportSchema, type BodyReportInput } from '../../../api/_lib/importBodyReportSchema';
 import { BODY_METRIC_FIELDS } from '../bodyMetricsFields';
+import { formatShortDate as formatMeasuredAt } from '../../lib/date';
 import './ImportPreview.css';
 import './ImportBodyReportPage.css';
 
@@ -28,14 +28,6 @@ const COMPOSITION_ANALYSIS_LABELS: { key: 'peso' | 'massa_gorda' | 'massa_ossea'
   { key: 'agua_corporal', label: 'Água corporal' },
   { key: 'massa_muscular', label: 'Massa muscular' },
 ];
-
-function formatMeasuredAt(dateStr: string): string {
-  try {
-    return format(new Date(`${dateStr}T00:00:00`), 'dd/MM/yyyy');
-  } catch {
-    return dateStr;
-  }
-}
 
 export function ImportBodyReportPage() {
   const { session } = useAuth();

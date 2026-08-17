@@ -2,11 +2,8 @@ import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ClipboardList, PencilLine, Trash2 } from 'lucide-react';
 import { deleteBodyReport, fetchBodyReports } from './bodyReportApi';
+import { formatShortDate as formatDate } from '../../lib/date';
 import './BodyReportPage.css';
-
-function formatDate(dateStr: string): string {
-  return new Date(`${dateStr}T00:00:00`).toLocaleDateString('pt-BR');
-}
 
 export function BodyReportPage() {
   const queryClient = useQueryClient();

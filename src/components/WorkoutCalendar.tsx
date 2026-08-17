@@ -18,7 +18,8 @@ import { fetchWeeklySchedule } from '../features/scheduleApi';
 import { ProgressRing } from './ProgressRing';
 import './WorkoutCalendar.css';
 
-const MAX_MONTHS_BACK = 2;
+const MAX_MONTHS_BACK = 5;
+const MAX_MONTHS_FORWARD = 1;
 const WEEKDAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
 function monthLabel(date: Date): string {
@@ -26,10 +27,12 @@ function monthLabel(date: Date): string {
   return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
 }
 
-function percentClass(percent: number): 'ok' | 'accent' | 'neutral' {
+function cellLevel(isWorkoutDay: boolean, isFutureDay: boolean, percent: number): 'none' | 'scheduled' | 'ok' | 'accent' | 'zero' {
+  if (!isWorkoutDay) return 'none';
+  if (isFutureDay) return 'scheduled';
   if (percent >= 100) return 'ok';
   if (percent > 0) return 'accent';
-  return 'neutral';
+  return 'zero';
 }
 
 export function WorkoutCalendar() {
@@ -88,8 +91,8 @@ export function WorkoutCalendar() {
           <button
             type="button"
             className="workout-calendar-nav-btn"
-            onClick={() => setMonthOffset((o) => Math.min(o + 1, 0))}
-            disabled={monthOffset >= 0}
+            onClick={() => setMonthOffset((o) => Math.min(o + 1, MAX_MONTHS_FORWARD))}
+            disabled={monthOffset >= MAX_MONTHS_FORWARD}
             aria-label="Próximo mês"
           >
             <ChevronRight size={16} />
@@ -128,30 +131,26 @@ export function WorkoutCalendar() {
           const isFutureDay = isAfter(day, today);
           const percent = progressQuery.data?.[dateKey] ?? (isWorkoutDay && !isFutureDay ? 0 : undefined);
           const clickable = isCurrentMonth && isWorkoutDay && !isFutureDay;
+          const level = cellLevel(isWorkoutDay, isFutureDay, percent ?? 0);
+          const className = `workout-calendar-cell level-${level} ${isToday(day) ? 'is-today' : ''}`;
 
-          return (
-            <div
-              key={dateKey}
-              className={`workout-calendar-cell ${isToday(day) ? 'is-today' : ''} ${isWorkoutDay ? 'is-workout-day' : ''}`}
-            >
+          const content = (
+            <>
               <span className="workout-calendar-daynum">{day.getDate()}</span>
-              {isWorkoutDay &&
-                (clickable ? (
-                  <Link
-                    to={`/treino?date=${dateKey}`}
-                    className={`workout-calendar-percent workout-calendar-percent-${percentClass(percent ?? 0)}`}
-                  >
-                    {percent ?? 0}%
-                  </Link>
-                ) : (
-                  <span
-                    className={`workout-calendar-percent workout-calendar-percent-${
-                      percent != null ? percentClass(percent) : 'neutral'
-                    }`}
-                  >
-                    {percent != null ? `${percent}%` : '—'}
-                  </span>
-                ))}
+              {isWorkoutDay && !isFutureDay && (
+                <span className="workout-calendar-percent-inline">{percent ?? 0}%</span>
+              )}
+              {isWorkoutDay && isFutureDay && <span className="workout-calendar-dot" />}
+            </>
+          );
+
+          return clickable ? (
+            <Link key={dateKey} to={`/treino?date=${dateKey}`} className={className}>
+              {content}
+            </Link>
+          ) : (
+            <div key={dateKey} className={className}>
+              {content}
             </div>
           );
         })}

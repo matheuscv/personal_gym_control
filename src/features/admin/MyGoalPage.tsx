@@ -1,6 +1,6 @@
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { differenceInYears, format } from 'date-fns';
+import { differenceInYears } from 'date-fns';
 import {
   CategoryScale,
   Chart as ChartJS,
@@ -14,6 +14,7 @@ import { PencilLine, Save, Target, TrendingDown } from 'lucide-react';
 import { fetchGoal, upsertGoal } from '../goalApi';
 import { computeGoalProgress } from '../goalProgress';
 import { fetchBodyReports } from './bodyReportApi';
+import { formatShortDate as formatDate } from '../../lib/date';
 import './MyGoalPage.css';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip);
@@ -22,10 +23,6 @@ const rootStyle = getComputedStyle(document.documentElement);
 const accentColor = rootStyle.getPropertyValue('--accent').trim() || '#d9a441';
 const textColor = rootStyle.getPropertyValue('--text').trim() || '#9a9c9f';
 const gridColor = rootStyle.getPropertyValue('--border').trim() || '#3a3d42';
-
-function formatDate(dateStr: string): string {
-  return format(new Date(`${dateStr}T00:00:00`), 'dd/MM');
-}
 
 export function MyGoalPage() {
   const queryClient = useQueryClient();

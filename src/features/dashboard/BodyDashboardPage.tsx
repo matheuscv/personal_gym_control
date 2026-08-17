@@ -17,6 +17,7 @@ import { BODY_MEASUREMENT_FIELDS } from '../bodyMeasurementFields';
 import { fetchGoal } from '../goalApi';
 import { computeGoalProgress } from '../goalProgress';
 import { bodyLevelClass, classifyImc } from '../bodyClassification';
+import { formatShortDate } from '../../lib/date';
 import './dashboard.css';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip);
@@ -147,6 +148,9 @@ const LOWER_IS_BETTER = new Set([
   'whr',
   'controle_peso_kg',
   'grau_obesidade_pct',
+  // A pedido do usuário: no card do topo, pontuação em queda mostra
+  // verde e em alta mostra vermelho (mesma regra do grupo "idem Peso").
+  'pontuacao_corporal',
 ]);
 const HIGHER_IS_BETTER = new Set([
   'massa_muscular_kg',
@@ -157,7 +161,6 @@ const HIGHER_IS_BETTER = new Set([
   'massa_proteica_kg',
   'tmb_kcal',
   'peso_livre_gordura_kg',
-  'pontuacao_corporal',
 ]);
 
 function trendDisplay(
@@ -406,7 +409,7 @@ export function BodyDashboardPage() {
           <div className="progress-card resumo-card">
             <div className="progress-header">
               <h3>Análise da composição corporal</h3>
-              <span className="resumo-date">{latest.measured_at}</span>
+              <span className="resumo-date">{formatShortDate(latest.measured_at)}</span>
             </div>
             <div className="resumo-table-wrap">
               <table className="resumo-table">
@@ -463,7 +466,7 @@ export function BodyDashboardPage() {
             </div>
             <Line
               data={{
-                labels: chartPoints.map((p) => p.measured_at),
+                labels: chartPoints.map((p) => formatShortDate(p.measured_at)),
                 datasets: [
                   {
                     label: activeField.label,
@@ -505,7 +508,7 @@ export function BodyDashboardPage() {
                 const previous = historyDescending[index + 1];
                 return (
                   <tr key={report.measured_at}>
-                    <td>{report.measured_at}</td>
+                    <td>{formatShortDate(report.measured_at)}</td>
                     {HISTORY_FIELDS.map((field) => {
                       const value = report.metrics[field.key];
                       const displayValue =

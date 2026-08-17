@@ -5,6 +5,7 @@ import { Ruler, Save, Scale, StickyNote } from 'lucide-react';
 import { BODY_METRIC_FIELDS, type BodyMetricField } from '../bodyMetricsFields';
 import { BODY_MEASUREMENT_FIELDS, MEASUREMENT_GROUPS, type BodyMeasurementField } from '../bodyMeasurementFields';
 import { fetchBodyReports, upsertBodyReport } from './bodyReportApi';
+import { formatShortDate } from '../../lib/date';
 import './CreateBodyReportPage.css';
 
 function today(): string {
@@ -105,7 +106,7 @@ export function CreateBodyReportPage() {
   }
 
   const heading = editingReport
-    ? `Editar relatório de ${new Date(`${editingReport.measured_at}T00:00:00`).toLocaleDateString('pt-BR')}`
+    ? `Editar relatório de ${formatShortDate(editingReport.measured_at)}`
     : 'Criar relatório';
 
   function renderMetricField(field: BodyMetricField) {

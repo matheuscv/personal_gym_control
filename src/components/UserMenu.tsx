@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronDown, LogOut, Settings, User, UserPlus } from 'lucide-react';
+import { ChevronDown, Download, LogOut, Settings, User, UserPlus } from 'lucide-react';
 import { useAuth } from '../features/auth/auth-context';
 import './UserMenu.css';
+
+const IS_ANDROID = import.meta.env.VITE_PLATFORM === 'android';
+const ANDROID_APK_URL =
+  'https://github.com/matheuscv/personal_gym_control/releases/download/android-apk/personal-gym-control.apk';
 
 function initialsFor(email: string | undefined, displayName: unknown): string {
   const name = typeof displayName === 'string' && displayName.trim() ? displayName.trim() : email;
@@ -74,6 +78,19 @@ export function UserMenu() {
             <UserPlus size={16} />
             Convidar alguém
           </Link>
+          {!IS_ANDROID && (
+            <a
+              href={ANDROID_APK_URL}
+              role="menuitem"
+              className="user-menu-item"
+              onClick={close}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Download size={16} />
+              Baixar app Android
+            </a>
+          )}
           <button
             type="button"
             role="menuitem"

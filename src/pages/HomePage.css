@@ -16,14 +16,50 @@
   margin: 0 0 4px;
 }
 
+.welcome-name {
+  color: var(--accent);
+}
+
+.welcome-greeting-sub {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--text);
+  margin: 2px 0 0;
+}
+
 .welcome-summary {
+  margin: 16px 0 28px;
+}
+
+.welcome-summary-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.welcome-summary-hint {
   color: var(--text);
   font-size: 14px;
-  margin: 4px 0 28px;
+}
+
+.welcome-summary-label {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text);
 }
 
 .welcome-summary strong {
-  color: var(--text-h);
+  font-family: var(--heading);
+  font-weight: 700;
+  color: var(--accent);
 }
 
 .welcome-summary a {
