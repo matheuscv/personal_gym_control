@@ -21,6 +21,11 @@ import './dashboard.css';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip);
 
+// A versão Android não embarca a área de Configuração (admin) — sem
+// formulário/import de relatório pra abrir por lá, o CTA "Registrar em
+// Configuração" não tem pra onde levar o usuário.
+const IS_ANDROID = import.meta.env.VITE_PLATFORM === 'android';
+
 const rootStyle = getComputedStyle(document.documentElement);
 const accentColor = rootStyle.getPropertyValue('--accent').trim() || '#2f6fed';
 const textColor = rootStyle.getPropertyValue('--text').trim() || '#9a9c9f';
@@ -290,8 +295,7 @@ export function BodyDashboardPage() {
           icon={<PieChart size={34} />}
           title="Ainda não há relatórios corporais"
           description="Registre seu primeiro relatório de composição corporal (manual ou por importação de JSON) para acompanhar sua evolução."
-          actionLabel="Registrar em Configuração"
-          actionTo="/admin/body-report"
+          {...(!IS_ANDROID && { actionLabel: 'Registrar em Configuração', actionTo: '/admin/body-report' })}
         />
       </div>
     );
