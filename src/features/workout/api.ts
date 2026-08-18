@@ -173,13 +173,31 @@ export async function loadDailyWorkout(scheduledPlanId: number, date: Date): Pro
     .returns<SessionSet[]>();
   if (setsError) throw setsError;
 
+  let liveSets = existingSets ?? [];
+
+  // Série fantasma: exercício foi removido do plano depois que a série já
+  // existia, então plan_exercise_id virou null (on delete set null) —
+  // nunca mais aparece pra ser marcada (a UI agrupa por plan_exercise_id),
+  // mas continuava contando pra sempre no total do percentual do dia. Só
+  // faz sentido apagar numa sessão ainda viva (nunca travada) — histórico
+  // travado é imutável, mesmo que tenha o mesmo problema de antes da
+  // trava existir.
+  if (!isLocked) {
+    const orphanIds = liveSets.filter((s) => s.plan_exercise_id == null && !s.completed).map((s) => s.id);
+    if (orphanIds.length > 0) {
+      const { error: deleteOrphansError } = await supabase.from('workout_session_sets').delete().in('id', orphanIds);
+      if (deleteOrphansError) throw deleteOrphansError;
+      liveSets = liveSets.filter((s) => !orphanIds.includes(s.id));
+    }
+  }
+
   // Sessão travada (histórico) nunca tenta criar séries novas pra bater
   // com target_sets — o plano pode ter sido editado ou até excluído
   // depois, então plan_exercise_id poderia nem existir mais (violaria a
   // FK). Só a sessão ao vivo (hoje/futuro, nunca concluída) auto-completa
   // séries faltantes conforme o plano atual.
   const setsByPlanExercise = new Map<number, number>();
-  for (const set of existingSets ?? []) {
+  for (const set of liveSets) {
     if (set.plan_exercise_id == null) continue;
     setsByPlanExercise.set(set.plan_exercise_id, (setsByPlanExercise.get(set.plan_exercise_id) ?? 0) + 1);
   }
@@ -197,7 +215,7 @@ export async function loadDailyWorkout(scheduledPlanId: number, date: Date): Pro
         }));
       });
 
-  let sets = existingSets ?? [];
+  let sets = liveSets;
   if (missingSets.length > 0) {
     const { data: insertedSets, error: insertSetsError } = await supabase
       .from('workout_session_sets')
