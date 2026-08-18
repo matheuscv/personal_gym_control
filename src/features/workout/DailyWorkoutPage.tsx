@@ -22,6 +22,7 @@ import {
   fetchSessionForDate,
   loadDailyWorkout,
   reopenSession,
+  updateExerciseNote,
   updateSessionSet,
 } from './api';
 import { enqueuePatch, flushQueue, getQueuedCount } from './offlineQueue';
@@ -86,18 +87,21 @@ export function DailyWorkoutPage() {
   const queryClient = useQueryClient();
   const [sets, setSets] = useState<SessionSet[]>([]);
   const [completedAt, setCompletedAt] = useState<string | null>(null);
+  const [exerciseNotes, setExerciseNotes] = useState<Record<number, string>>({});
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [queuedCount, setQueuedCount] = useState(() => getQueuedCount());
 
   useEffect(() => {
     setSets([]);
     setCompletedAt(null);
+    setExerciseNotes({});
   }, [dateOffset]);
 
   useEffect(() => {
     if (workoutQuery.data) {
       setSets(workoutQuery.data.sets);
       setCompletedAt(workoutQuery.data.completedAt);
+      setExerciseNotes(workoutQuery.data.exerciseNotes);
     }
   }, [workoutQuery.data]);
 
@@ -214,6 +218,18 @@ export function DailyWorkoutPage() {
       // continua na fila, mas ao menos o dado digitado nao se perde.
       enqueuePatch(setId, patch);
       setQueuedCount(getQueuedCount());
+    }
+  }
+
+  async function persistNote(planExerciseId: number, note: string) {
+    if (!workoutQuery.data) return;
+    setExerciseNotes((prev) => ({ ...prev, [planExerciseId]: note }));
+    try {
+      await updateExerciseNote(workoutQuery.data.sessionId, planExerciseId, note);
+    } catch {
+      // Sem fila offline pra comentários (baixo risco, ver reps/peso/tempo
+      // acima) — o valor digitado fica preservado na tela e uma nova
+      // tentativa de salvar (outro blur, ou reabrir o dia) tenta de novo.
     }
   }
 
@@ -399,6 +415,18 @@ export function DailyWorkoutPage() {
                   })}
                 </tbody>
               </table>
+
+              <label className="exercise-note">
+                <span>Comentários</span>
+                <textarea
+                  placeholder="Alguma observação sobre este exercício hoje?"
+                  defaultValue={exerciseNotes[pe.id] ?? ''}
+                  disabled={isLocked}
+                  onBlur={(e) => {
+                    if (e.target.value !== (exerciseNotes[pe.id] ?? '')) persistNote(pe.id, e.target.value);
+                  }}
+                />
+              </label>
             </div>
           ))}
         </div>

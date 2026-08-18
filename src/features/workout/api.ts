@@ -208,6 +208,18 @@ export async function loadDailyWorkout(scheduledPlanId: number, date: Date): Pro
     sets = [...sets, ...(insertedSets ?? [])];
   }
 
+  const { data: noteRows, error: notesError } = await supabase
+    .from('workout_session_exercise_notes')
+    .select('plan_exercise_id, note')
+    .eq('session_id', sessionId)
+    .returns<{ plan_exercise_id: number; note: string | null }[]>();
+  if (notesError) throw notesError;
+
+  const exerciseNotes: Record<number, string> = {};
+  for (const row of noteRows ?? []) {
+    if (row.note) exerciseNotes[row.plan_exercise_id] = row.note;
+  }
+
   return {
     sessionId,
     completedAt: session.completed_at,
@@ -215,11 +227,22 @@ export async function loadDailyWorkout(scheduledPlanId: number, date: Date): Pro
     planName,
     planExercises,
     sets,
+    exerciseNotes,
   };
 }
 
 export async function updateSessionSet(id: number, patch: SessionSetPatch): Promise<void> {
   const { error } = await supabase.from('workout_session_sets').update(patch).eq('id', id);
+  if (error) throw error;
+}
+
+export async function updateExerciseNote(sessionId: number, planExerciseId: number, note: string): Promise<void> {
+  const { error } = await supabase
+    .from('workout_session_exercise_notes')
+    .upsert(
+      { session_id: sessionId, plan_exercise_id: planExerciseId, note: note.trim() || null, updated_at: new Date().toISOString() },
+      { onConflict: 'session_id,plan_exercise_id' }
+    );
   if (error) throw error;
 }
 

@@ -35,6 +35,8 @@ export interface DailyWorkout {
   planName: string;
   planExercises: PlanExercise[];
   sets: SessionSet[];
+  // Comentário livre por exercício do plano, indexado por plan_exercise_id.
+  exerciseNotes: Record<number, string>;
 }
 
 export type SessionSetPatch = Partial<

@@ -300,6 +300,52 @@ tr.completed .set-number {
   color: var(--bg);
 }
 
+.exercise-note {
+  display: block;
+  margin-top: 12px;
+}
+
+.exercise-note span {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+  opacity: 0.7;
+  margin-bottom: 5px;
+}
+
+.exercise-note textarea {
+  width: 100%;
+  min-height: 38px;
+  resize: vertical;
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.4;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+  transition: all 0.15s ease;
+}
+
+.exercise-note textarea::placeholder {
+  color: var(--text);
+  opacity: 0.45;
+}
+
+.exercise-note textarea:focus {
+  outline: none;
+  border-color: var(--accent-border);
+}
+
+.exercise-note textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .check-btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;

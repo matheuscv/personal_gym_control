@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   CategoryScale,
@@ -9,7 +9,7 @@ import {
   Tooltip,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import { ArrowDown, ArrowUp, PieChart } from 'lucide-react';
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, PieChart } from 'lucide-react';
 import { EmptyState } from '../../components/EmptyState';
 import { fetchBodyProgress, type BodyReportPoint } from './bodyApi';
 import { BODY_METRIC_FIELDS, type BodyMetricField } from '../bodyMetricsFields';
@@ -240,6 +240,11 @@ export function BodyDashboardPage() {
   const progressQuery = useQuery({ queryKey: ['body-progress'], queryFn: fetchBodyProgress });
   const goalQuery = useQuery({ queryKey: ['user-goal'], queryFn: fetchGoal });
   const [selectedField, setSelectedField] = useState('peso_kg');
+  const historyScrollRef = useRef<HTMLDivElement>(null);
+
+  function scrollHistory(direction: -1 | 1) {
+    historyScrollRef.current?.scrollBy({ left: direction * 260, behavior: 'smooth' });
+  }
 
   const desiredWeight = goalQuery.data?.desired_weight_kg ?? null;
 
@@ -490,62 +495,80 @@ export function BodyDashboardPage() {
         )}
 
         <h2 className="section-title">Histórico</h2>
-        <div className="body-history-scroll">
-          <table className="body-history-table">
-            <thead>
-              <tr>
-                <th>Data</th>
-                {HISTORY_FIELDS.map((field) => (
-                  <th key={field.key}>{field.label}</th>
-                ))}
-                {BODY_MEASUREMENT_FIELDS.map((field) => (
-                  <th key={field.key}>{field.label} (cm)</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {historyDescending.map((report, index) => {
-                const previous = historyDescending[index + 1];
-                return (
-                  <tr key={report.measured_at}>
-                    <td>{formatShortDate(report.measured_at)}</td>
-                    {HISTORY_FIELDS.map((field) => {
-                      const value = report.metrics[field.key];
-                      const displayValue =
-                        field.key === 'controle_peso_kg' && value != null ? value.toFixed(2) : value ?? '—';
-                      const trendResult = trendDisplay(field.key, value, previous?.metrics[field.key]);
-                      return (
-                        <td key={field.key}>
-                          {displayValue}
-                          {trendResult &&
-                            (trendResult.dir === 'up' ? (
-                              <ArrowUp className={trendResult.good ? 'trend-good' : 'trend-bad'} size={12} />
-                            ) : (
-                              <ArrowDown className={trendResult.good ? 'trend-good' : 'trend-bad'} size={12} />
-                            ))}
-                        </td>
-                      );
-                    })}
-                    {BODY_MEASUREMENT_FIELDS.map((field) => {
-                      const value = report.measurements[field.key];
-                      const trendResult = measurementTrendDisplay(value, previous?.measurements[field.key]);
-                      return (
-                        <td key={field.key}>
-                          {value ?? '—'}
-                          {trendResult &&
-                            (trendResult.dir === 'up' ? (
-                              <ArrowUp className={trendResult.good ? 'trend-good' : 'trend-bad'} size={12} />
-                            ) : (
-                              <ArrowDown className={trendResult.good ? 'trend-good' : 'trend-bad'} size={12} />
-                            ))}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="body-history-wrap">
+          <button
+            type="button"
+            className="history-nav-btn history-nav-prev"
+            onClick={() => scrollHistory(-1)}
+            aria-label="Ver colunas anteriores"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <button
+            type="button"
+            className="history-nav-btn history-nav-next"
+            onClick={() => scrollHistory(1)}
+            aria-label="Ver próximas colunas"
+          >
+            <ChevronRight size={18} />
+          </button>
+          <div className="body-history-scroll" ref={historyScrollRef}>
+            <table className="body-history-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  {HISTORY_FIELDS.map((field) => (
+                    <th key={field.key}>{field.label}</th>
+                  ))}
+                  {BODY_MEASUREMENT_FIELDS.map((field) => (
+                    <th key={field.key}>{field.label} (cm)</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {historyDescending.map((report, index) => {
+                  const previous = historyDescending[index + 1];
+                  return (
+                    <tr key={report.measured_at}>
+                      <td>{formatShortDate(report.measured_at)}</td>
+                      {HISTORY_FIELDS.map((field) => {
+                        const value = report.metrics[field.key];
+                        const displayValue =
+                          field.key === 'controle_peso_kg' && value != null ? value.toFixed(2) : value ?? '—';
+                        const trendResult = trendDisplay(field.key, value, previous?.metrics[field.key]);
+                        return (
+                          <td key={field.key}>
+                            {displayValue}
+                            {trendResult &&
+                              (trendResult.dir === 'up' ? (
+                                <ArrowUp className={trendResult.good ? 'trend-good' : 'trend-bad'} size={12} />
+                              ) : (
+                                <ArrowDown className={trendResult.good ? 'trend-good' : 'trend-bad'} size={12} />
+                              ))}
+                          </td>
+                        );
+                      })}
+                      {BODY_MEASUREMENT_FIELDS.map((field) => {
+                        const value = report.measurements[field.key];
+                        const trendResult = measurementTrendDisplay(value, previous?.measurements[field.key]);
+                        return (
+                          <td key={field.key}>
+                            {value ?? '—'}
+                            {trendResult &&
+                              (trendResult.dir === 'up' ? (
+                                <ArrowUp className={trendResult.good ? 'trend-good' : 'trend-bad'} size={12} />
+                              ) : (
+                                <ArrowDown className={trendResult.good ? 'trend-good' : 'trend-bad'} size={12} />
+                              ))}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

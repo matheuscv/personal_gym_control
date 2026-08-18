@@ -430,8 +430,13 @@
   color: var(--text-h);
 }
 
+.body-history-wrap {
+  position: relative;
+}
+
 .body-history-scroll {
-  overflow-x: auto;
+  overflow: auto;
+  max-height: 560px;
   border-radius: 12px;
   border: 1px solid var(--border);
 }
@@ -455,6 +460,56 @@
   border-bottom: 1px solid var(--border);
   background: var(--panel-2);
   white-space: nowrap;
+}
+
+.body-history-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.body-history-table thead th:first-child {
+  z-index: 3;
+}
+
+/* Setas flutuantes centralizadas na lateral da tabela, pra navegar as
+   colunas de onde o usuário estiver — sem precisar descer até o fim de um
+   histórico com muitas linhas só pra alcançar a barra de rolagem
+   horizontal nativa. Posicionadas em relação ao wrap (altura limitada
+   pelo max-height do scroll), então ficam visíveis assim que a tabela
+   entra em tela. */
+.history-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+  opacity: 0.85;
+  transition: all 0.15s ease;
+  z-index: 4;
+}
+
+.history-nav-btn:hover {
+  opacity: 1;
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
+.history-nav-prev {
+  left: -14px;
+}
+
+.history-nav-next {
+  right: -14px;
 }
 
 .body-history-table td {
