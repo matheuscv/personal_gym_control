@@ -73,6 +73,38 @@ function ExerciseChart({ exercise, tall }: { exercise: ExerciseProgress; tall?: 
   );
 }
 
+interface ExerciseGroup {
+  planName: string;
+  exercises: ExerciseProgress[];
+}
+
+const NO_PLAN_LABEL = 'Sem plano';
+
+// Agrupa por Nome do Treino (plano), ordem alfabética crescente — tanto
+// pra tabela quanto pro grid de gráficos. Exercícios fora de qualquer
+// plano atual (removidos depois) caem num grupo à parte no fim, depois
+// dos grupos nomeados.
+function groupByPlan(exercises: ExerciseProgress[]): ExerciseGroup[] {
+  const byPlan = new Map<string, ExerciseProgress[]>();
+  for (const exercise of exercises) {
+    const key = exercise.planName ?? NO_PLAN_LABEL;
+    const list = byPlan.get(key) ?? [];
+    list.push(exercise);
+    byPlan.set(key, list);
+  }
+
+  const sortByName = (list: ExerciseProgress[]) =>
+    [...list].sort((a, b) => a.exerciseName.localeCompare(b.exerciseName, 'pt-BR'));
+
+  const named = Array.from(byPlan.entries())
+    .filter(([planName]) => planName !== NO_PLAN_LABEL)
+    .sort(([a], [b]) => a.localeCompare(b, 'pt-BR'))
+    .map(([planName, list]) => ({ planName, exercises: sortByName(list) }));
+
+  const unnamed = byPlan.get(NO_PLAN_LABEL);
+  return unnamed ? [...named, { planName: NO_PLAN_LABEL, exercises: sortByName(unnamed) }] : named;
+}
+
 function ExerciseTable({ exercises }: { exercises: ExerciseProgress[] }) {
   const dates = useMemo(() => {
     const set = new Set<string>();
@@ -149,6 +181,7 @@ export function DashboardPage() {
   }
 
   const expandedExercise = progressQuery.data.find((exercise) => exercise.exerciseId === expandedId) ?? null;
+  const groups = groupByPlan(progressQuery.data);
 
   return (
     <div className="dashboard-page-wrap">
@@ -174,7 +207,19 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {viewMode === 'table' && <ExerciseTable exercises={progressQuery.data} />}
+      {viewMode === 'table' && (
+        <div className="exercise-groups">
+          {groups.map((group) => (
+            <section key={group.planName} className="exercise-group">
+              <h2 className="exercise-group-title">
+                {group.planName}
+                <span className="exercise-group-count">{group.exercises.length}</span>
+              </h2>
+              <ExerciseTable exercises={group.exercises} />
+            </section>
+          ))}
+        </div>
+      )}
 
       {viewMode === 'chart' &&
         (expandedExercise ? (
@@ -186,20 +231,30 @@ export function DashboardPage() {
             <ExerciseChart exercise={expandedExercise} tall />
           </div>
         ) : (
-          <div className="dashboard-page">
-            {progressQuery.data.map((exercise) => (
-              <button
-                key={exercise.exerciseId}
-                type="button"
-                className="progress-card progress-card-btn"
-                onClick={() => setExpandedId(exercise.exerciseId)}
-              >
-                <ExerciseChart exercise={exercise} />
-                <span className="progress-expand-hint">
-                  <Maximize2 size={11} />
-                  Ampliar
-                </span>
-              </button>
+          <div className="exercise-groups">
+            {groups.map((group) => (
+              <section key={group.planName} className="exercise-group">
+                <h2 className="exercise-group-title">
+                  {group.planName}
+                  <span className="exercise-group-count">{group.exercises.length}</span>
+                </h2>
+                <div className="dashboard-page">
+                  {group.exercises.map((exercise) => (
+                    <button
+                      key={exercise.exerciseId}
+                      type="button"
+                      className="progress-card progress-card-btn"
+                      onClick={() => setExpandedId(exercise.exerciseId)}
+                    >
+                      <ExerciseChart exercise={exercise} />
+                      <span className="progress-expand-hint">
+                        <Maximize2 size={11} />
+                        Ampliar
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
         ))}

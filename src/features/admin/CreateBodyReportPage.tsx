@@ -165,20 +165,20 @@ export function CreateBodyReportPage() {
           {editingReport && <span className="report-field-hint">A data não pode ser alterada na edição.</span>}
         </label>
 
-        <section className="report-card">
-          <div className="report-card-header">
+        <section className="report-section">
+          <div className="report-section-header">
             <Scale size={15} />
             <span>Composição corporal</span>
           </div>
           <div className="report-field-grid">{BODY_METRIC_FIELDS.map(renderMetricField)}</div>
         </section>
 
-        <section className="report-card">
-          <div className="report-card-header">
+        <section className="report-section">
+          <div className="report-section-header">
             <Ruler size={15} />
             <span>Medidas perimétricas</span>
           </div>
-          <p className="report-card-hint">
+          <p className="report-section-hint">
             Medidas de fita métrica — cada campo é opcional, preencha só o que tiver medido.
           </p>
           {MEASUREMENT_GROUPS.map((group) => (
@@ -191,8 +191,8 @@ export function CreateBodyReportPage() {
           ))}
         </section>
 
-        <section className="report-card">
-          <div className="report-card-header">
+        <section className="report-section">
+          <div className="report-section-header">
             <StickyNote size={15} />
             <span>Notas</span>
           </div>

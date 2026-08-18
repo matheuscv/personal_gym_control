@@ -1,0 +1,75 @@
+.biometric-lock-screen {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+}
+
+.biometric-lock-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--accent-bg);
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.biometric-lock-screen h1 {
+  font-size: 20px;
+  margin: 0;
+}
+
+.biometric-lock-screen p {
+  color: var(--text);
+  font-size: 14px;
+  margin: 0 0 8px;
+}
+
+.biometric-lock-error {
+  color: var(--danger) !important;
+}
+
+.biometric-unlock-btn {
+  width: 100%;
+  max-width: 280px;
+  font: inherit;
+  font-family: var(--heading);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-size: 14px;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: var(--bg);
+  cursor: pointer;
+}
+
+.biometric-unlock-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.biometric-lock-signout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.biometric-lock-signout:hover {
+  color: var(--text-h);
+}

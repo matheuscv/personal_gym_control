@@ -114,3 +114,65 @@
 .password-toggle:hover {
   color: var(--accent);
 }
+
+.biometric-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.biometric-toggle-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--accent);
+}
+
+.biometric-toggle-info strong {
+  display: block;
+  font-size: 14px;
+  color: var(--text-h);
+  margin-bottom: 2px;
+}
+
+.biometric-toggle-info .account-hint {
+  margin: 0;
+}
+
+.biometric-switch {
+  flex-shrink: 0;
+  position: relative;
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.biometric-switch.on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.biometric-switch:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.biometric-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--bg);
+  transition: transform 0.15s ease;
+}
+
+.biometric-switch.on .biometric-switch-thumb {
+  transform: translateX(18px);
+}

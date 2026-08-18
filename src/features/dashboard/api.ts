@@ -12,6 +12,7 @@ export interface ExerciseProgress {
   exerciseName: string;
   metric: ProgressMetric;
   points: ExerciseProgressPoint[];
+  planName: string | null;
 }
 
 interface SetRow {
@@ -37,6 +38,24 @@ export async function fetchExerciseProgress(): Promise<ExerciseProgress[]> {
     .eq('completed', true)
     .returns<SetRow[]>();
   if (error) throw error;
+
+  // Nome do treino (plano) de cada exercício, pra agrupar a Evolução
+  // Treino — usa a associação atual (plano vivo), não a de quando a série
+  // foi registrada. Exercício em mais de um plano fica com o primeiro
+  // encontrado; fora de qualquer plano (removido depois) cai no grupo
+  // "Sem plano".
+  const { data: planExerciseRows, error: planError } = await supabase
+    .from('workout_plan_exercises')
+    .select('exercise_id, workout_plans (name)')
+    .returns<{ exercise_id: number; workout_plans: { name: string } | null }[]>();
+  if (planError) throw planError;
+
+  const planNameByExercise = new Map<number, string>();
+  for (const row of planExerciseRows ?? []) {
+    if (!planNameByExercise.has(row.exercise_id) && row.workout_plans?.name) {
+      planNameByExercise.set(row.exercise_id, row.workout_plans.name);
+    }
+  }
 
   const byExercise = new Map<number, ExerciseAccum>();
 
@@ -80,6 +99,7 @@ export async function fetchExerciseProgress(): Promise<ExerciseProgress[]> {
         points: Array.from(maxByDate.entries())
           .map(([date, value]) => ({ date, value }))
           .sort((a, b) => a.date.localeCompare(b.date)),
+        planName: planNameByExercise.get(exerciseId) ?? null,
       };
     })
     .filter((exercise) => exercise.points.length > 0)

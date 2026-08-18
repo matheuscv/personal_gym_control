@@ -54,14 +54,14 @@
   color: var(--text);
 }
 
-.report-card {
+.report-section {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 18px 20px;
 }
 
-.report-card-header {
+.report-section-header {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -73,11 +73,11 @@
   margin-bottom: 14px;
 }
 
-.report-card-header svg {
+.report-section-header svg {
   color: var(--accent);
 }
 
-.report-card-hint {
+.report-section-hint {
   color: var(--text);
   font-size: 12.5px;
   margin: -8px 0 16px;
