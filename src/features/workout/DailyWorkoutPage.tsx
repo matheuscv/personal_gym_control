@@ -74,13 +74,22 @@ export function DailyWorkoutPage() {
     queryKey: ['scheduled-plan', dateKey],
     queryFn: () => fetchScheduledPlanForDate(targetDate),
   });
-  const planId = dateSessionQuery.data?.planId ?? scheduleQuery.data?.plan_id ?? null;
+  // Só cai pro plano da agenda depois que dateSessionQuery realmente
+  // resolveu (não só "ainda não chegou") — senão, se scheduleQuery
+  // terminar primeiro por sorte de rede, workoutQuery dispara cedo demais
+  // sem sessão conhecida e loadDailyWorkout acaba buscando ela nesse
+  // (perdendo o ganho de reaproveitar essa consulta, ver loadDailyWorkout).
+  const planId =
+    dateSessionQuery.data !== undefined ? (dateSessionQuery.data?.plan_id ?? scheduleQuery.data?.plan_id ?? null) : null;
   const hasNoWorkout =
     !dateSessionQuery.isLoading && !scheduleQuery.isLoading && !dateSessionQuery.data && !scheduleQuery.data;
 
   const workoutQuery = useQuery({
     queryKey: ['daily-workout', dateKey],
-    queryFn: () => loadDailyWorkout(planId!, targetDate),
+    // dateSessionQuery já buscou a sessão dessa data pra descobrir o
+    // planId acima — repassar o resultado evita loadDailyWorkout buscar
+    // a mesma sessão de novo (era a maior causa da demora pra abrir a tela).
+    queryFn: () => loadDailyWorkout(planId!, targetDate, dateSessionQuery.data),
     enabled: planId != null,
   });
 

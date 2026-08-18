@@ -41,7 +41,7 @@ interface PlanExerciseRow {
   exercises: { name: string; muscle_group: string | null } | null;
 }
 
-interface SessionRow {
+export interface SessionRow {
   id: number;
   plan_id: number | null;
   completed_at: string | null;
@@ -90,17 +90,19 @@ async function fetchLivePlanExercises(planId: number): Promise<PlanExercise[]> {
 // uma troca na agenda "perder" a sessão antiga (e criar uma segunda pra
 // mesma data). .limit(1) em vez de .maybeSingle() por segurança, caso
 // ainda exista alguma duplicata de antes dessa correção.
-async function resolveSession(scheduledPlanId: number, dateStr: string): Promise<SessionRow> {
-  const { data: existingSessions, error: sessionLookupError } = await supabase
+async function findSessionForDate(dateStr: string): Promise<SessionRow | null> {
+  const { data, error } = await supabase
     .from('workout_sessions')
     .select('id, plan_id, completed_at, locked_plan_exercises')
     .eq('session_date', dateStr)
     .order('id', { ascending: true })
     .limit(1)
     .returns<SessionRow[]>();
-  if (sessionLookupError) throw sessionLookupError;
-  if (existingSessions && existingSessions.length > 0) return existingSessions[0];
+  if (error) throw error;
+  return data && data.length > 0 ? data[0] : null;
+}
 
+async function createSession(scheduledPlanId: number, dateStr: string): Promise<SessionRow> {
   // Sessão criada pra uma data que já passou (ex.: primeira vez que se
   // visita um dia antigo) já nasce travada — editar o plano depois não
   // deve alterar a visão desse dia.
@@ -115,27 +117,61 @@ async function resolveSession(scheduledPlanId: number, dateStr: string): Promise
   return newSession;
 }
 
-// Só olha se já existe sessão pra data (sem criar) — usada pra descobrir
-// o plano "de fato" daquele dia antes de decidir se precisa consultar a
-// agenda ao vivo (que pode ter mudado desde então).
-export async function fetchSessionForDate(
-  dateStr: string
-): Promise<{ planId: number | null; completedAt: string | null } | null> {
-  const { data, error } = await supabase
-    .from('workout_sessions')
-    .select('plan_id, completed_at')
-    .eq('session_date', dateStr)
-    .order('id', { ascending: true })
-    .limit(1)
-    .returns<{ plan_id: number | null; completed_at: string | null }[]>();
-  if (error) throw error;
-  if (!data || data.length === 0) return null;
-  return { planId: data[0].plan_id, completedAt: data[0].completed_at };
+// knownSession, quando informado (já veio de fetchSessionForDate na
+// tela), evita repetir a mesma busca por data aqui dentro — é o que mais
+// pesava no tempo de abertura de Treino do dia, já que rodava de novo a
+// cada abertura mesmo a tela já tendo acabado de buscar isso.
+async function resolveSession(
+  scheduledPlanId: number,
+  dateStr: string,
+  knownSession?: SessionRow | null
+): Promise<SessionRow> {
+  const existing = knownSession !== undefined ? knownSession : await findSessionForDate(dateStr);
+  return existing ?? createSession(scheduledPlanId, dateStr);
 }
 
-export async function loadDailyWorkout(scheduledPlanId: number, date: Date): Promise<DailyWorkout> {
+// Só olha se já existe sessão pra data (sem criar) — usada pra descobrir
+// o plano "de fato" daquele dia antes de decidir se precisa consultar a
+// agenda ao vivo (que pode ter mudado desde então), e reaproveitada por
+// loadDailyWorkout (ver resolveSession) pra não buscar a mesma sessão
+// duas vezes.
+export async function fetchSessionForDate(dateStr: string): Promise<SessionRow | null> {
+  return findSessionForDate(dateStr);
+}
+
+async function fetchExistingSets(sessionId: number): Promise<SessionSet[]> {
+  const { data, error } = await supabase
+    .from('workout_session_sets')
+    .select('*')
+    .eq('session_id', sessionId)
+    .order('set_number')
+    .returns<SessionSet[]>();
+  if (error) throw error;
+  return data ?? [];
+}
+
+async function fetchExerciseNotes(sessionId: number): Promise<Record<number, string>> {
+  const { data, error } = await supabase
+    .from('workout_session_exercise_notes')
+    .select('plan_exercise_id, note')
+    .eq('session_id', sessionId)
+    .returns<{ plan_exercise_id: number; note: string | null }[]>();
+  if (error) throw error;
+
+  const exerciseNotes: Record<number, string> = {};
+  for (const row of data ?? []) {
+    if (row.note) exerciseNotes[row.plan_exercise_id] = row.note;
+  }
+  return exerciseNotes;
+}
+
+export async function loadDailyWorkout(
+  scheduledPlanId: number,
+  date: Date,
+  knownSession?: SessionRow | null
+): Promise<DailyWorkout> {
   const dateStr = format(date, 'yyyy-MM-dd');
-  const session = await resolveSession(scheduledPlanId, dateStr);
+  const session = await resolveSession(scheduledPlanId, dateStr, knownSession);
   const sessionId = session.id;
   // Sessão já existente manda no plano de fato usado nesse dia — pode
   // divergir do agendado ao vivo se a agenda mudou depois de criada.
@@ -149,31 +185,26 @@ export async function loadDailyWorkout(scheduledPlanId: number, date: Date): Pro
   const isPastDate = dateStr < todayStr();
   const isLocked = wasAlreadyLocked || isPastDate || session.completed_at != null;
 
-  let planExercises: PlanExercise[];
-  if (session.locked_plan_exercises) {
-    planExercises = session.locked_plan_exercises;
-  } else {
-    planExercises = await fetchLivePlanExercises(effectivePlanId);
-    if (isLocked) {
-      // Devia estar travada mas ainda não tinha snapshot (dia já
-      // passado, ou sessão concluída antes dessa trava existir) — trava
-      // agora com o melhor snapshot disponível, pra parar de acompanhar
-      // o plano vivo a partir daqui.
-      await supabase.from('workout_sessions').update({ locked_plan_exercises: planExercises }).eq('id', sessionId);
-    }
+  // Nenhuma dessas 4 buscas depende do resultado das outras — disparadas
+  // juntas em vez de uma atrás da outra, é o que mais reduz o tempo de
+  // abertura da tela (de ~5 idas-e-voltas sequenciais ao banco pra 2,
+  // contando a resolução da sessão acima).
+  const [planExercises, planName, existingSets, exerciseNotes] = await Promise.all([
+    wasAlreadyLocked ? Promise.resolve(session.locked_plan_exercises!) : fetchLivePlanExercises(effectivePlanId),
+    fetchPlanName(effectivePlanId),
+    fetchExistingSets(sessionId),
+    fetchExerciseNotes(sessionId),
+  ]);
+
+  if (!wasAlreadyLocked && isLocked) {
+    // Devia estar travada mas ainda não tinha snapshot (dia já passado,
+    // ou sessão concluída antes dessa trava existir) — trava agora com o
+    // melhor snapshot disponível, pra parar de acompanhar o plano vivo a
+    // partir daqui.
+    await supabase.from('workout_sessions').update({ locked_plan_exercises: planExercises }).eq('id', sessionId);
   }
 
-  const planName = await fetchPlanName(effectivePlanId);
-
-  const { data: existingSets, error: setsError } = await supabase
-    .from('workout_session_sets')
-    .select('*')
-    .eq('session_id', sessionId)
-    .order('set_number')
-    .returns<SessionSet[]>();
-  if (setsError) throw setsError;
-
-  let liveSets = existingSets ?? [];
+  let liveSets = existingSets;
 
   // Série fantasma: exercício foi removido do plano depois que a série já
   // existia, então plan_exercise_id virou null (on delete set null) —
@@ -224,18 +255,6 @@ export async function loadDailyWorkout(scheduledPlanId: number, date: Date): Pro
       .returns<SessionSet[]>();
     if (insertSetsError) throw insertSetsError;
     sets = [...sets, ...(insertedSets ?? [])];
-  }
-
-  const { data: noteRows, error: notesError } = await supabase
-    .from('workout_session_exercise_notes')
-    .select('plan_exercise_id, note')
-    .eq('session_id', sessionId)
-    .returns<{ plan_exercise_id: number; note: string | null }[]>();
-  if (notesError) throw notesError;
-
-  const exerciseNotes: Record<number, string> = {};
-  for (const row of noteRows ?? []) {
-    if (row.note) exerciseNotes[row.plan_exercise_id] = row.note;
   }
 
   return {
