@@ -4,6 +4,8 @@ export interface WorkoutPlan {
   is_active: boolean;
 }
 
+export type MetricType = 'strength' | 'cardio';
+
 export interface PlanExercise {
   id: number;
   order_index: number;
@@ -12,6 +14,7 @@ export interface PlanExercise {
   exercise_id: number;
   exercise_name: string;
   muscle_group: string | null;
+  metric_type: MetricType;
 }
 
 export interface SessionSet {
@@ -22,6 +25,9 @@ export interface SessionSet {
   reps: number | null;
   weight_kg: number | null;
   duration_seconds: number | null;
+  distance_km: number | null;
+  incline_degree: number | null;
+  calories: number | null;
   completed: boolean;
 }
 
@@ -40,5 +46,8 @@ export interface DailyWorkout {
 }
 
 export type SessionSetPatch = Partial<
-  Pick<SessionSet, 'reps' | 'weight_kg' | 'duration_seconds' | 'completed'>
+  Pick<
+    SessionSet,
+    'reps' | 'weight_kg' | 'duration_seconds' | 'distance_km' | 'incline_degree' | 'calories' | 'completed'
+  >
 >;

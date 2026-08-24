@@ -38,7 +38,7 @@ interface PlanExerciseRow {
   target_sets: number | null;
   target_reps: string | null;
   exercise_id: number;
-  exercises: { name: string; muscle_group: string | null } | null;
+  exercises: { name: string; muscle_group: string | null; metric_type: 'strength' | 'cardio' } | null;
 }
 
 export interface SessionRow {
@@ -68,7 +68,7 @@ async function fetchPlanName(planId: number): Promise<string> {
 async function fetchLivePlanExercises(planId: number): Promise<PlanExercise[]> {
   const { data: planExerciseRows, error } = await supabase
     .from('workout_plan_exercises')
-    .select('id, order_index, target_sets, target_reps, exercise_id, exercises (name, muscle_group)')
+    .select('id, order_index, target_sets, target_reps, exercise_id, exercises (name, muscle_group, metric_type)')
     .eq('plan_id', planId)
     .order('order_index')
     .returns<PlanExerciseRow[]>();
@@ -82,6 +82,7 @@ async function fetchLivePlanExercises(planId: number): Promise<PlanExercise[]> {
     exercise_id: row.exercise_id,
     exercise_name: row.exercises?.name ?? '(exercício removido)',
     muscle_group: row.exercises?.muscle_group ?? null,
+    metric_type: row.exercises?.metric_type ?? 'strength',
   }));
 }
 

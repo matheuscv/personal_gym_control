@@ -15,6 +15,10 @@
   --ok-bg: rgba(111, 169, 122, 0.12);
   --danger: #d9704f;
   --danger-bg: rgba(217, 112, 79, 0.12);
+  --metric-duration: #3987e5;
+  --metric-distance: #d95926;
+  --metric-incline: #199e70;
+  --metric-calories: #c98500;
   --social-bg: rgba(38, 40, 45, 0.6);
   --shadow:
     rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
@@ -48,6 +52,10 @@
   --ok-bg: rgba(63, 125, 78, 0.1);
   --danger: #b34324;
   --danger-bg: rgba(179, 67, 36, 0.1);
+  --metric-duration: #2a78d6;
+  --metric-distance: #eb6834;
+  --metric-incline: #1baf7a;
+  --metric-calories: #eda100;
   --social-bg: rgba(241, 238, 230, 0.7);
   --shadow:
     rgba(0, 0, 0, 0.08) 0 10px 15px -3px, rgba(0, 0, 0, 0.04) 0 4px 6px -2px;

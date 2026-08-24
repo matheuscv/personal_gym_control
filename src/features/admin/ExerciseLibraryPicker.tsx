@@ -11,7 +11,7 @@ import {
   Timer,
   Folder,
 } from 'lucide-react';
-import { EXERCISE_LIBRARY, type LibraryGroup } from './exerciseLibrary';
+import { EXERCISE_LIBRARY, type LibraryGroup, type MetricType } from './exerciseLibrary';
 import './ExercisePicker.css';
 
 const GROUP_ICONS: Record<string, typeof Dumbbell> = {
@@ -30,7 +30,13 @@ const GROUP_ICONS: Record<string, typeof Dumbbell> = {
 
 interface ExerciseLibraryPickerProps {
   selectedNames: Set<string>;
-  onSelect: (muscleGroup: string, name: string, targetSets: number, targetReps: string) => void;
+  onSelect: (
+    muscleGroup: string,
+    name: string,
+    targetSets: number,
+    targetReps: string,
+    metricType: MetricType
+  ) => void;
   extraGroups?: LibraryGroup[];
 }
 
@@ -87,7 +93,9 @@ export function ExerciseLibraryPicker({ selectedNames, onSelect, extraGroups }: 
                       key={ex.name}
                       type="button"
                       className={`exercise-chip ${isSelected ? 'selected' : ''}`}
-                      onClick={() => onSelect(group.muscle_group, ex.name, ex.target_sets, ex.target_reps)}
+                      onClick={() =>
+                        onSelect(group.muscle_group, ex.name, ex.target_sets, ex.target_reps, ex.metric_type)
+                      }
                     >
                       {ex.name}
                     </button>

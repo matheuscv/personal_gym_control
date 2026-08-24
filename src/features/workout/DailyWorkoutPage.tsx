@@ -26,12 +26,55 @@ import {
   updateSessionSet,
 } from './api';
 import { enqueuePatch, flushQueue, getQueuedCount } from './offlineQueue';
-import type { SessionSet, SessionSetPatch } from './types';
+import type { MetricType, SessionSet, SessionSetPatch } from './types';
 import { youtubeSearchUrl } from '../../lib/youtube';
 import './DailyWorkoutPage.css';
 
 const MAX_DAYS_BACK = 30;
 const MAX_DAYS_FORWARD = 7;
+
+type SetFieldKey = keyof Pick<
+  SessionSet,
+  'reps' | 'weight_kg' | 'duration_seconds' | 'distance_km' | 'incline_degree' | 'calories'
+>;
+
+interface SetFieldConfig {
+  key: SetFieldKey;
+  label: string;
+  step?: string;
+  toInputValue: (value: number | null) => number | string;
+  fromInputValue: (raw: string) => number | null;
+}
+
+const numberField = (key: SetFieldKey, label: string, step?: string): SetFieldConfig => ({
+  key,
+  label,
+  step,
+  toInputValue: (value) => value ?? '',
+  fromInputValue: (raw) => (raw === '' ? null : Number(raw)),
+});
+
+const STRENGTH_FIELDS: SetFieldConfig[] = [
+  numberField('reps', 'Reps'),
+  numberField('weight_kg', 'Peso (kg)', '0.5'),
+  numberField('duration_seconds', 'Tempo (s)'),
+];
+
+const CARDIO_FIELDS: SetFieldConfig[] = [
+  {
+    key: 'duration_seconds',
+    label: 'Duração (min)',
+    toInputValue: (value) => (value == null ? '' : value / 60),
+    fromInputValue: (raw) => (raw === '' ? null : Math.round(Number(raw) * 60)),
+  },
+  numberField('distance_km', 'Distância (km)', '0.01'),
+  numberField('incline_degree', 'Inclinação (°)', '0.5'),
+  numberField('calories', 'Calorias (kcal)'),
+];
+
+function fieldsForMetricType(metricType: MetricType): SetFieldConfig[] {
+  return metricType === 'cardio' ? CARDIO_FIELDS : STRENGTH_FIELDS;
+}
 
 // A versão Android não embarca a área de Configuração (admin) — sem
 // agenda semanal pra configurar por lá, o CTA "Configurar Meu Treino"
@@ -344,86 +387,67 @@ export function DailyWorkoutPage() {
               </div>
               {pe.target_reps && <p className="target-reps">Alvo: {pe.target_reps} reps</p>}
 
-              <table className="sets-table">
-                <thead>
-                  <tr>
-                    <th>Série</th>
-                    <th>Reps</th>
-                    <th>Peso (kg)</th>
-                    <th>Tempo (s)</th>
-                    <th>Feito</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(setsByExercise.get(pe.id) ?? []).map((set) => {
-                    const canComplete = set.reps != null && set.weight_kg != null && set.duration_seconds != null;
-                    return (
-                      <tr key={set.id} className={set.completed ? 'completed' : ''}>
-                        <td>
-                          <span className="set-number">{set.set_number}</span>
-                        </td>
-                        <td>
-                          <input
-                            type="number"
-                            min={0}
-                            defaultValue={set.reps ?? ''}
-                            disabled={isLocked}
-                            onBlur={(e) =>
-                              persist(set.id, {
-                                reps: e.target.value === '' ? null : Number(e.target.value),
-                              })
-                            }
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="number"
-                            min={0}
-                            step="0.5"
-                            defaultValue={set.weight_kg ?? ''}
-                            disabled={isLocked}
-                            onBlur={(e) =>
-                              persist(set.id, {
-                                weight_kg: e.target.value === '' ? null : Number(e.target.value),
-                              })
-                            }
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="number"
-                            min={0}
-                            defaultValue={set.duration_seconds ?? ''}
-                            disabled={isLocked}
-                            onBlur={(e) =>
-                              persist(set.id, {
-                                duration_seconds: e.target.value === '' ? null : Number(e.target.value),
-                              })
-                            }
-                          />
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            className={`check-btn ${set.completed ? 'checked' : ''}`}
-                            aria-pressed={set.completed}
-                            aria-label={set.completed ? 'Marcar como não concluída' : 'Marcar como concluída'}
-                            disabled={isLocked || (!set.completed && !canComplete)}
-                            title={
-                              !canComplete && !set.completed
-                                ? 'Preencha reps, peso e tempo antes de concluir'
-                                : undefined
-                            }
-                            onClick={() => persist(set.id, { completed: !set.completed })}
-                          >
-                            ✓
-                          </button>
-                        </td>
+              {(() => {
+                const fields = fieldsForMetricType(pe.metric_type ?? 'strength');
+                return (
+                  <table className="sets-table">
+                    <thead>
+                      <tr>
+                        <th>Série</th>
+                        {fields.map((field) => (
+                          <th key={field.key}>{field.label}</th>
+                        ))}
+                        <th>Feito</th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody>
+                      {(setsByExercise.get(pe.id) ?? []).map((set) => {
+                        const canComplete = fields.every((field) => set[field.key] != null);
+                        return (
+                          <tr key={set.id} className={set.completed ? 'completed' : ''}>
+                            <td>
+                              <span className="set-number">{set.set_number}</span>
+                            </td>
+                            {fields.map((field) => (
+                              <td key={field.key}>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  step={field.step}
+                                  defaultValue={field.toInputValue(set[field.key])}
+                                  disabled={isLocked}
+                                  onBlur={(e) =>
+                                    persist(set.id, {
+                                      [field.key]: field.fromInputValue(e.target.value),
+                                    } as SessionSetPatch)
+                                  }
+                                />
+                              </td>
+                            ))}
+                            <td>
+                              <button
+                                type="button"
+                                className={`check-btn ${set.completed ? 'checked' : ''}`}
+                                aria-pressed={set.completed}
+                                aria-label={set.completed ? 'Marcar como não concluída' : 'Marcar como concluída'}
+                                disabled={isLocked || (!set.completed && !canComplete)}
+                                title={
+                                  !canComplete && !set.completed
+                                    ? `Preencha ${fields.map((f) => f.label).join(', ')} antes de concluir`
+                                    : undefined
+                                }
+                                onClick={() => persist(set.id, { completed: !set.completed })}
+                              >
+                                ✓
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                );
+              })()}
 
               <label className="exercise-note">
                 <span>Comentários</span>

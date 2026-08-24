@@ -1,7 +1,10 @@
+export type MetricType = 'strength' | 'cardio';
+
 export interface LibraryExercise {
   name: string;
   target_sets: number;
   target_reps: string;
+  metric_type: MetricType;
 }
 
 export interface LibraryGroup {
@@ -11,10 +14,14 @@ export interface LibraryGroup {
 
 const s3 = (reps: string): [number, string] => [3, reps];
 
-function group(muscle_group: string, entries: [string, number, string][]): LibraryGroup {
+function group(
+  muscle_group: string,
+  entries: [string, number, string][],
+  metric_type: MetricType = 'strength'
+): LibraryGroup {
   return {
     muscle_group,
-    exercises: entries.map(([name, target_sets, target_reps]) => ({ name, target_sets, target_reps })),
+    exercises: entries.map(([name, target_sets, target_reps]) => ({ name, target_sets, target_reps, metric_type })),
   };
 }
 
@@ -130,13 +137,22 @@ export const EXERCISE_LIBRARY: LibraryGroup[] = [
     ['Rotação de tronco na polia (russian twist cabo)', ...s3('12-15')],
     ['Ab wheel (roda abdominal)', ...s3('8-12')],
   ]),
-  group('Cardio', [
-    ['Esteira (caminhada/corrida)', 1, '20 min'],
-    ['Bicicleta ergométrica', 1, '20 min'],
-    ['Elíptico', 1, '20 min'],
-    ['Escada (stairmaster)', 1, '15 min'],
-    ['Remo ergométrico', 1, '15 min'],
-    ['Pular corda', 3, '2 min'],
-    ['HIIT em bike (intervalado)', 1, '15 min'],
-  ]),
+  {
+    muscle_group: 'Cardio',
+    exercises: [
+      ...group(
+        'Cardio',
+        [
+          ['Esteira (caminhada/corrida)', 1, '20 min'],
+          ['Bicicleta ergométrica', 1, '20 min'],
+          ['Elíptico', 1, '20 min'],
+          ['Escada (stairmaster)', 1, '15 min'],
+          ['Remo ergométrico', 1, '15 min'],
+          ['HIIT em bike (intervalado)', 1, '15 min'],
+        ],
+        'cardio'
+      ).exercises,
+      ...group('Cardio', [['Pular corda', 3, '2 min']]).exercises,
+    ],
+  },
 ];

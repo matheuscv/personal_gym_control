@@ -3,6 +3,7 @@ export interface Exercise {
   name: string;
   muscle_group: string | null;
   notes: string | null;
+  metric_type: 'strength' | 'cardio';
 }
 
 export interface Plan {

@@ -4,7 +4,7 @@ import type { Exercise, Plan, PlanExerciseAdmin } from './types';
 export async function fetchExercises(): Promise<Exercise[]> {
   const { data, error } = await supabase
     .from('exercises')
-    .select('id, name, muscle_group, notes')
+    .select('id, name, muscle_group, notes, metric_type')
     .order('name');
   if (error) throw error;
   return data;
@@ -13,11 +13,12 @@ export async function fetchExercises(): Promise<Exercise[]> {
 export async function upsertExerciseByName(input: {
   name: string;
   muscle_group: string | null;
+  metric_type?: 'strength' | 'cardio';
 }): Promise<Exercise> {
   const { data, error } = await supabase
     .from('exercises')
     .upsert(input, { onConflict: 'owner_id,name' })
-    .select('id, name, muscle_group, notes')
+    .select('id, name, muscle_group, notes, metric_type')
     .single();
   if (error) throw error;
   return data;

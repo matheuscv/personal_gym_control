@@ -1,16 +1,16 @@
 import { supabase } from '../../lib/supabaseClient';
 
-export type ProgressMetric = 'weight' | 'duration';
+export type MetricKey = 'weight' | 'duration' | 'distance' | 'incline' | 'calories';
 
 export interface ExerciseProgressPoint {
   date: string;
-  value: number;
+  values: Partial<Record<MetricKey, number>>;
 }
 
 export interface ExerciseProgress {
   exerciseId: number;
   exerciseName: string;
-  metric: ProgressMetric;
+  metricKeys: MetricKey[];
   points: ExerciseProgressPoint[];
   planName: string | null;
 }
@@ -18,23 +18,44 @@ export interface ExerciseProgress {
 interface SetRow {
   weight_kg: number | null;
   duration_seconds: number | null;
+  distance_km: number | null;
+  incline_degree: number | null;
+  calories: number | null;
   exercise_id: number;
-  exercises: { name: string } | null;
+  exercises: { name: string; metric_type: 'strength' | 'cardio' } | null;
   workout_sessions: { session_date: string } | null;
 }
 
 interface ExerciseAccum {
   name: string;
+  metricType: 'strength' | 'cardio';
   hasWeight: boolean;
   hasDuration: boolean;
-  maxWeightByDate: Map<string, number>;
-  maxDurationByDate: Map<string, number>;
+  maxByDate: Record<MetricKey, Map<string, number>>;
+}
+
+function emptyMaxByDate(): Record<MetricKey, Map<string, number>> {
+  return {
+    weight: new Map(),
+    duration: new Map(),
+    distance: new Map(),
+    incline: new Map(),
+    calories: new Map(),
+  };
+}
+
+function trackMax(maxByDate: Map<string, number>, date: string, value: number | null): void {
+  if (value == null) return;
+  const current = maxByDate.get(date) ?? -Infinity;
+  if (value > current) maxByDate.set(date, value);
 }
 
 export async function fetchExerciseProgress(): Promise<ExerciseProgress[]> {
   const { data, error } = await supabase
     .from('workout_session_sets')
-    .select('weight_kg, duration_seconds, exercise_id, exercises (name), workout_sessions (session_date)')
+    .select(
+      'weight_kg, duration_seconds, distance_km, incline_degree, calories, exercise_id, exercises (name, metric_type), workout_sessions (session_date)'
+    )
     .eq('completed', true)
     .returns<SetRow[]>();
   if (error) throw error;
@@ -65,21 +86,26 @@ export async function fetchExerciseProgress(): Promise<ExerciseProgress[]> {
 
     const entry = byExercise.get(row.exercise_id) ?? {
       name: row.exercises?.name ?? '(exercício removido)',
+      metricType: row.exercises?.metric_type ?? 'strength',
       hasWeight: false,
       hasDuration: false,
-      maxWeightByDate: new Map<string, number>(),
-      maxDurationByDate: new Map<string, number>(),
+      maxByDate: emptyMaxByDate(),
     };
 
-    if (row.weight_kg != null && row.weight_kg > 0) {
-      entry.hasWeight = true;
-      const currentMax = entry.maxWeightByDate.get(date) ?? 0;
-      if (row.weight_kg > currentMax) entry.maxWeightByDate.set(date, row.weight_kg);
-    }
-    if (row.duration_seconds != null && row.duration_seconds > 0) {
-      entry.hasDuration = true;
-      const currentMax = entry.maxDurationByDate.get(date) ?? 0;
-      if (row.duration_seconds > currentMax) entry.maxDurationByDate.set(date, row.duration_seconds);
+    if (entry.metricType === 'cardio') {
+      trackMax(entry.maxByDate.duration, date, row.duration_seconds != null ? row.duration_seconds / 60 : null);
+      trackMax(entry.maxByDate.distance, date, row.distance_km);
+      trackMax(entry.maxByDate.incline, date, row.incline_degree);
+      trackMax(entry.maxByDate.calories, date, row.calories);
+    } else {
+      if (row.weight_kg != null && row.weight_kg > 0) {
+        entry.hasWeight = true;
+        trackMax(entry.maxByDate.weight, date, row.weight_kg);
+      }
+      if (row.duration_seconds != null && row.duration_seconds > 0) {
+        entry.hasDuration = true;
+        trackMax(entry.maxByDate.duration, date, row.duration_seconds);
+      }
     }
 
     byExercise.set(row.exercise_id, entry);
@@ -87,18 +113,37 @@ export async function fetchExerciseProgress(): Promise<ExerciseProgress[]> {
 
   return Array.from(byExercise.entries())
     .map(([exerciseId, entry]) => {
-      // Exercício sem carga registrada (isométrico/por tempo, ex.:
-      // prancha) mas com tempo preenchido passa a acompanhar segundos em
-      // vez de kg no gráfico.
-      const metric: ProgressMetric = !entry.hasWeight && entry.hasDuration ? 'duration' : 'weight';
-      const maxByDate = metric === 'duration' ? entry.maxDurationByDate : entry.maxWeightByDate;
+      let metricKeys: MetricKey[];
+      if (entry.metricType === 'cardio') {
+        metricKeys = ['duration', 'distance', 'incline', 'calories'];
+      } else {
+        // Exercício sem carga registrada (isométrico/por tempo, ex.:
+        // prancha) mas com tempo preenchido passa a acompanhar segundos em
+        // vez de kg no gráfico.
+        metricKeys = [!entry.hasWeight && entry.hasDuration ? 'duration' : 'weight'];
+      }
+
+      const dates = new Set<string>();
+      for (const key of metricKeys) {
+        for (const date of entry.maxByDate[key].keys()) dates.add(date);
+      }
+
+      const points = Array.from(dates)
+        .sort()
+        .map((date) => ({
+          date,
+          values: Object.fromEntries(
+            metricKeys
+              .map((key) => [key, entry.maxByDate[key].get(date)] as const)
+              .filter(([, value]) => value != null)
+          ) as Partial<Record<MetricKey, number>>,
+        }));
+
       return {
         exerciseId,
         exerciseName: entry.name,
-        metric,
-        points: Array.from(maxByDate.entries())
-          .map(([date, value]) => ({ date, value }))
-          .sort((a, b) => a.date.localeCompare(b.date)),
+        metricKeys,
+        points,
         planName: planNameByExercise.get(exerciseId) ?? null,
       };
     })

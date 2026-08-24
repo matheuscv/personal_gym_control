@@ -11,6 +11,7 @@ const importPlanExerciseSchema = z.object({
   muscle_group: z.string().trim().min(1).nullish(),
   target_sets: z.number().int().positive().nullish(),
   target_reps: z.string().trim().min(1).nullish(),
+  metric_type: z.enum(['strength', 'cardio']).nullish(),
 });
 
 const importPlanSchema = z.object({
@@ -82,6 +83,7 @@ async function handleRequest(req: Request): Promise<Response> {
   const exerciseRows = input.exercises.map((exercise) => ({
     name: exercise.name,
     muscle_group: exercise.muscle_group ?? null,
+    metric_type: exercise.metric_type ?? 'strength',
   }));
 
   const { data: upsertedExercises, error: exercisesError } = await supabase

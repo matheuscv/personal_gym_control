@@ -14,7 +14,7 @@ import {
   upsertExerciseByName,
 } from './api';
 import { ExerciseLibraryPicker } from './ExerciseLibraryPicker';
-import { EXERCISE_LIBRARY } from './exerciseLibrary';
+import { EXERCISE_LIBRARY, type MetricType } from './exerciseLibrary';
 import './PlanDetailPage.css';
 
 export function PlanDetailPage() {
@@ -38,8 +38,18 @@ export function PlanDetailPage() {
   }
 
   const addMutation = useMutation({
-    mutationFn: async (input: { muscle_group: string; name: string; target_sets: number; target_reps: string }) => {
-      const exercise = await upsertExerciseByName({ name: input.name, muscle_group: input.muscle_group });
+    mutationFn: async (input: {
+      muscle_group: string;
+      name: string;
+      target_sets: number;
+      target_reps: string;
+      metric_type: MetricType;
+    }) => {
+      const exercise = await upsertExerciseByName({
+        name: input.name,
+        muscle_group: input.muscle_group,
+        metric_type: input.metric_type,
+      });
       await addExerciseToPlan({
         plan_id: id,
         exercise_id: exercise.id,
@@ -67,15 +77,32 @@ export function PlanDetailPage() {
     return [
       {
         muscle_group: 'Meus exercícios',
-        exercises: mine.map((ex) => ({ name: ex.name, target_sets: 3, target_reps: '' })),
+        exercises: mine.map((ex) => ({
+          name: ex.name,
+          target_sets: 3,
+          target_reps: '',
+          metric_type: ex.metric_type,
+        })),
       },
     ];
   }, [exercisesQuery.data, libraryNames]);
 
-  function handlePickExercise(muscleGroup: string, name: string, targetSets: number, targetReps: string) {
+  function handlePickExercise(
+    muscleGroup: string,
+    name: string,
+    targetSets: number,
+    targetReps: string,
+    metricType: MetricType
+  ) {
     if (existingNames.has(name)) return;
     setError(null);
-    addMutation.mutate({ muscle_group: muscleGroup, name, target_sets: targetSets, target_reps: targetReps });
+    addMutation.mutate({
+      muscle_group: muscleGroup,
+      name,
+      target_sets: targetSets,
+      target_reps: targetReps,
+      metric_type: metricType,
+    });
   }
 
   const removeMutation = useMutation({ mutationFn: removePlanExercise, onSuccess: invalidate });

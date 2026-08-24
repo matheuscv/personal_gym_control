@@ -6,6 +6,7 @@ import { useAuth } from '../auth/auth-context';
 import { importPlanSchema } from '../../../api/_lib/importSchema';
 import { youtubeSearchUrl } from '../../lib/youtube';
 import { ExerciseLibraryPicker } from './ExerciseLibraryPicker';
+import type { MetricType } from './exerciseLibrary';
 import './CreatePlanPage.css';
 
 interface SelectedExercise {
@@ -13,6 +14,7 @@ interface SelectedExercise {
   muscle_group: string;
   target_sets: number;
   target_reps: string;
+  metric_type: MetricType;
 }
 
 export function CreatePlanPage() {
@@ -26,13 +28,25 @@ export function CreatePlanPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  function toggleExercise(muscleGroup: string, name: string, targetSets: number, targetReps: string) {
+  function toggleExercise(
+    muscleGroup: string,
+    name: string,
+    targetSets: number,
+    targetReps: string,
+    metricType: MetricType = 'strength'
+  ) {
     setSelected((prev) => {
       const next = new Map(prev);
       if (next.has(name)) {
         next.delete(name);
       } else {
-        next.set(name, { name, muscle_group: muscleGroup, target_sets: targetSets, target_reps: targetReps });
+        next.set(name, {
+          name,
+          muscle_group: muscleGroup,
+          target_sets: targetSets,
+          target_reps: targetReps,
+          metric_type: metricType,
+        });
       }
       return next;
     });
@@ -59,6 +73,7 @@ export function CreatePlanPage() {
         muscle_group: ex.muscle_group,
         target_sets: ex.target_sets,
         target_reps: ex.target_reps,
+        metric_type: ex.metric_type,
       })),
     };
 
@@ -168,7 +183,9 @@ export function CreatePlanPage() {
                         type="button"
                         className="plan-builder-remove"
                         aria-label={`Remover ${ex.name}`}
-                        onClick={() => toggleExercise(ex.muscle_group, ex.name, ex.target_sets, ex.target_reps)}
+                        onClick={() =>
+                          toggleExercise(ex.muscle_group, ex.name, ex.target_sets, ex.target_reps, ex.metric_type)
+                        }
                       >
                         <X size={14} />
                       </button>
