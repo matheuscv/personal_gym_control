@@ -18,6 +18,7 @@ import { ProgressRing } from '../../components/ProgressRing';
 import {
   completeSession,
   deleteSession,
+  fetchLastUsedValues,
   fetchScheduledPlanForDate,
   fetchSessionForDate,
   loadDailyWorkout,
@@ -134,6 +135,17 @@ export function DailyWorkoutPage() {
     // a mesma sessão de novo (era a maior causa da demora pra abrir a tela).
     queryFn: () => loadDailyWorkout(planId!, targetDate, dateSessionQuery.data),
     enabled: planId != null,
+  });
+
+  // Reaproveitar os números do último treino só faz sentido pro dia de
+  // hoje, enquanto ele ainda está em aberto — dias passados são histórico
+  // (imutável) e dias futuros nem têm os campos liberados pra edição.
+  const isTodayLive = dateOffset === 0 && workoutQuery.data != null && workoutQuery.data.completedAt == null;
+  const planExerciseIdsKey = workoutQuery.data?.planExercises.map((pe) => pe.id).join(',') ?? '';
+  const lastUsedQuery = useQuery({
+    queryKey: ['last-used-values', dateKey, planExerciseIdsKey],
+    queryFn: () => fetchLastUsedValues(workoutQuery.data!.planExercises, dateKey),
+    enabled: isTodayLive,
   });
 
   const queryClient = useQueryClient();
@@ -273,6 +285,26 @@ export function DailyWorkoutPage() {
     }
   }
 
+  // Marcar como feito confirma de uma vez qualquer valor ainda só
+  // "sugerido" (reaproveitado do último treino e não editado) nos campos
+  // que a série ainda não tinha preenchido — evita exigir que o usuário
+  // clique em cada campo só pra confirmar o que já estava certo.
+  function handleToggleSetComplete(set: SessionSet, fields: SetFieldConfig[], suggestion?: SessionSetPatch) {
+    if (set.completed) {
+      persist(set.id, { completed: false });
+      return;
+    }
+    const patch: Record<string, number | boolean | null> = { completed: true };
+    if (suggestion) {
+      for (const field of fields) {
+        if (set[field.key] == null && suggestion[field.key] != null) {
+          patch[field.key] = suggestion[field.key] as number;
+        }
+      }
+    }
+    persist(set.id, patch as SessionSetPatch);
+  }
+
   async function persistNote(planExerciseId: number, note: string) {
     if (!workoutQuery.data) return;
     setExerciseNotes((prev) => ({ ...prev, [planExerciseId]: note }));
@@ -402,28 +434,44 @@ export function DailyWorkoutPage() {
                     </thead>
                     <tbody>
                       {(setsByExercise.get(pe.id) ?? []).map((set) => {
-                        const canComplete = fields.every((field) => set[field.key] != null);
+                        const suggestion = isTodayLive
+                          ? lastUsedQuery.data?.setValues.get(`${set.exercise_id}:${set.set_number}`)
+                          : undefined;
+                        const canComplete = fields.every(
+                          (field) => set[field.key] != null || suggestion?.[field.key] != null
+                        );
                         return (
                           <tr key={set.id} className={set.completed ? 'completed' : ''}>
                             <td>
                               <span className="set-number">{set.set_number}</span>
                             </td>
-                            {fields.map((field) => (
-                              <td key={field.key}>
-                                <input
-                                  type="number"
-                                  min={0}
-                                  step={field.step}
-                                  defaultValue={field.toInputValue(set[field.key])}
-                                  disabled={isLocked}
-                                  onBlur={(e) =>
-                                    persist(set.id, {
-                                      [field.key]: field.fromInputValue(e.target.value),
-                                    } as SessionSetPatch)
-                                  }
-                                />
-                              </td>
-                            ))}
+                            {fields.map((field) => {
+                              const hasRealValue = set[field.key] != null;
+                              const isSuggested = !hasRealValue && suggestion?.[field.key] != null;
+                              const displayValue = hasRealValue ? set[field.key] : isSuggested ? suggestion![field.key]! : null;
+                              return (
+                                <td key={field.key}>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    step={field.step}
+                                    defaultValue={field.toInputValue(displayValue)}
+                                    disabled={isLocked}
+                                    className={isSuggested ? 'suggested-value' : undefined}
+                                    onInput={
+                                      isSuggested
+                                        ? (e) => e.currentTarget.classList.remove('suggested-value')
+                                        : undefined
+                                    }
+                                    onBlur={(e) =>
+                                      persist(set.id, {
+                                        [field.key]: field.fromInputValue(e.target.value),
+                                      } as SessionSetPatch)
+                                    }
+                                  />
+                                </td>
+                              );
+                            })}
                             <td>
                               <button
                                 type="button"
@@ -436,7 +484,7 @@ export function DailyWorkoutPage() {
                                     ? `Preencha ${fields.map((f) => f.label).join(', ')} antes de concluir`
                                     : undefined
                                 }
-                                onClick={() => persist(set.id, { completed: !set.completed })}
+                                onClick={() => handleToggleSetComplete(set, fields, suggestion)}
                               >
                                 ✓
                               </button>
@@ -449,17 +497,28 @@ export function DailyWorkoutPage() {
                 );
               })()}
 
-              <label className="exercise-note">
-                <span>Comentários</span>
-                <textarea
-                  placeholder="Alguma observação sobre este exercício hoje?"
-                  defaultValue={exerciseNotes[pe.id] ?? ''}
-                  disabled={isLocked}
-                  onBlur={(e) => {
-                    if (e.target.value !== (exerciseNotes[pe.id] ?? '')) persistNote(pe.id, e.target.value);
-                  }}
-                />
-              </label>
+              {(() => {
+                const noteValue = exerciseNotes[pe.id];
+                const noteSuggestion = isTodayLive ? lastUsedQuery.data?.notes[pe.id] : undefined;
+                const isNoteSuggested = !noteValue && !!noteSuggestion;
+                return (
+                  <label className="exercise-note">
+                    <span>Comentários</span>
+                    <textarea
+                      placeholder="Alguma observação sobre este exercício hoje?"
+                      defaultValue={noteValue ?? noteSuggestion ?? ''}
+                      disabled={isLocked}
+                      className={isNoteSuggested ? 'suggested-value' : undefined}
+                      onInput={
+                        isNoteSuggested ? (e) => e.currentTarget.classList.remove('suggested-value') : undefined
+                      }
+                      onBlur={(e) => {
+                        if (e.target.value !== (exerciseNotes[pe.id] ?? '')) persistNote(pe.id, e.target.value);
+                      }}
+                    />
+                  </label>
+                );
+              })()}
             </div>
           ))}
         </div>

@@ -269,6 +269,91 @@ export async function loadDailyWorkout(
   };
 }
 
+export interface LastUsedData {
+  // Chave `${exercise_id}:${set_number}` — exercise_id (não plan_exercise_id)
+  // porque é estável mesmo se o plano for reorganizado/trocado depois.
+  setValues: Map<string, SessionSetPatch>;
+  notes: Record<number, string>;
+}
+
+interface RecentSessionRow {
+  id: number;
+  session_date: string;
+  workout_session_sets: Pick<
+    SessionSet,
+    'exercise_id' | 'set_number' | 'reps' | 'weight_kg' | 'duration_seconds' | 'distance_km' | 'incline_degree' | 'calories'
+  >[];
+}
+
+const RECENT_SESSIONS_LOOKBACK = 20;
+
+// Pra pré-preencher o Treino do dia com os números do último treino feito
+// com cada exercício — útil quando o usuário fica alguns dias sem treinar e
+// não lembra onde parou. Só olha pra sessões antes de hoje, e só pelos
+// exercícios do plano de hoje. A observação (nota) por exercício já é
+// vinculada a plan_exercise_id, então só é resgatada quando o mesmo plano
+// de hoje também foi usado na sessão anterior.
+export async function fetchLastUsedValues(planExercises: PlanExercise[], todayStr: string): Promise<LastUsedData> {
+  const planExerciseIds = planExercises.map((pe) => pe.id);
+
+  const { data: recentSessions, error } = await supabase
+    .from('workout_sessions')
+    .select(
+      'id, session_date, workout_session_sets (exercise_id, set_number, reps, weight_kg, duration_seconds, distance_km, incline_degree, calories)'
+    )
+    .lt('session_date', todayStr)
+    .order('session_date', { ascending: false })
+    .limit(RECENT_SESSIONS_LOOKBACK)
+    .returns<RecentSessionRow[]>();
+  if (error) throw error;
+
+  const setValues = new Map<string, SessionSetPatch>();
+  for (const session of recentSessions ?? []) {
+    for (const row of session.workout_session_sets ?? []) {
+      const key = `${row.exercise_id}:${row.set_number}`;
+      if (setValues.has(key)) continue;
+      const hasData =
+        row.reps != null ||
+        row.weight_kg != null ||
+        row.duration_seconds != null ||
+        row.distance_km != null ||
+        row.incline_degree != null ||
+        row.calories != null;
+      if (!hasData) continue;
+      setValues.set(key, {
+        reps: row.reps,
+        weight_kg: row.weight_kg,
+        duration_seconds: row.duration_seconds,
+        distance_km: row.distance_km,
+        incline_degree: row.incline_degree,
+        calories: row.calories,
+      });
+    }
+  }
+
+  const notes: Record<number, string> = {};
+  if (planExerciseIds.length > 0 && recentSessions && recentSessions.length > 0) {
+    const sessionIds = recentSessions.map((s) => s.id);
+    const sessionDateById = new Map(recentSessions.map((s) => [s.id, s.session_date]));
+    const { data: noteRows, error: notesError } = await supabase
+      .from('workout_session_exercise_notes')
+      .select('session_id, plan_exercise_id, note')
+      .in('session_id', sessionIds)
+      .in('plan_exercise_id', planExerciseIds)
+      .returns<{ session_id: number; plan_exercise_id: number; note: string | null }[]>();
+    if (notesError) throw notesError;
+
+    const sorted = (noteRows ?? [])
+      .filter((row) => row.note)
+      .sort((a, b) => (sessionDateById.get(b.session_id) ?? '').localeCompare(sessionDateById.get(a.session_id) ?? ''));
+    for (const row of sorted) {
+      if (!(row.plan_exercise_id in notes)) notes[row.plan_exercise_id] = row.note!;
+    }
+  }
+
+  return { setValues, notes };
+}
+
 export async function updateSessionSet(id: number, patch: SessionSetPatch): Promise<void> {
   const { error } = await supabase.from('workout_session_sets').update(patch).eq('id', id);
   if (error) throw error;

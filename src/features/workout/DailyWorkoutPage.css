@@ -279,6 +279,16 @@ tr.completed .set-number {
   cursor: not-allowed;
 }
 
+/* Valor reaproveitado do último treino, ainda não confirmado pelo usuário
+   (nem editado, nem o campo perdeu o foco) — some assim que ele digita um
+   valor novo ou confirma saindo do campo (vira cor normal ao persistir). */
+.sets-table input[type='number'].suggested-value,
+.exercise-note textarea.suggested-value {
+  color: var(--text);
+  opacity: 0.55;
+  font-weight: 500;
+}
+
 .check-btn {
   width: 32px;
   height: 32px;
