@@ -42,7 +42,14 @@ jobs:
           java-version: '21'
 
       - name: Setup Android SDK
+        # O default da action tenta instalar o pacote legado "tools", que a
+        # Google removeu do repositorio do SDK (sdkmanager falha com "Failed
+        # to find package 'tools'") - so platform-tools, que ainda existe e
+        # eh suficiente (build-tools/platform sao baixados pelo proprio AGP
+        # durante o gradle build, com as licencas ja aceitas por esta action).
         uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
 
       - name: Build debug APK
         working-directory: android
