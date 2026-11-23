@@ -285,24 +285,8 @@ export function DailyWorkoutPage() {
     }
   }
 
-  // Marcar como feito confirma de uma vez qualquer valor ainda só
-  // "sugerido" (reaproveitado do último treino e não editado) nos campos
-  // que a série ainda não tinha preenchido — evita exigir que o usuário
-  // clique em cada campo só pra confirmar o que já estava certo.
-  function handleToggleSetComplete(set: SessionSet, fields: SetFieldConfig[], suggestion?: SessionSetPatch) {
-    if (set.completed) {
-      persist(set.id, { completed: false });
-      return;
-    }
-    const patch: Record<string, number | boolean | null> = { completed: true };
-    if (suggestion) {
-      for (const field of fields) {
-        if (set[field.key] == null && suggestion[field.key] != null) {
-          patch[field.key] = suggestion[field.key] as number;
-        }
-      }
-    }
-    persist(set.id, patch as SessionSetPatch);
+  function handleToggleSetComplete(set: SessionSet) {
+    persist(set.id, { completed: !set.completed });
   }
 
   async function persistNote(planExerciseId: number, note: string) {
@@ -437,9 +421,13 @@ export function DailyWorkoutPage() {
                         const suggestion = isTodayLive
                           ? lastUsedQuery.data?.setValues.get(`${set.exercise_id}:${set.set_number}`)
                           : undefined;
-                        const canComplete = fields.every(
-                          (field) => set[field.key] != null || suggestion?.[field.key] != null
-                        );
+                        // Exige que o usuário tenha clicado em cada campo (o
+                        // que já persiste o valor, sugerido ou não, e troca a
+                        // cor de marca d'água pra cor real) antes de liberar
+                        // o Feito — ele precisa ter visto/confirmado os
+                        // números, não só aceitado às cegas o que foi
+                        // reaproveitado do último treino.
+                        const canComplete = fields.every((field) => set[field.key] != null);
                         return (
                           <tr key={set.id} className={set.completed ? 'completed' : ''}>
                             <td>
@@ -458,7 +446,7 @@ export function DailyWorkoutPage() {
                                     defaultValue={field.toInputValue(displayValue)}
                                     disabled={isLocked}
                                     className={isSuggested ? 'suggested-value' : undefined}
-                                    onInput={
+                                    onFocus={
                                       isSuggested
                                         ? (e) => e.currentTarget.classList.remove('suggested-value')
                                         : undefined
@@ -484,7 +472,7 @@ export function DailyWorkoutPage() {
                                     ? `Preencha ${fields.map((f) => f.label).join(', ')} antes de concluir`
                                     : undefined
                                 }
-                                onClick={() => handleToggleSetComplete(set, fields, suggestion)}
+                                onClick={() => handleToggleSetComplete(set)}
                               >
                                 ✓
                               </button>
@@ -509,7 +497,7 @@ export function DailyWorkoutPage() {
                       defaultValue={noteValue ?? noteSuggestion ?? ''}
                       disabled={isLocked}
                       className={isNoteSuggested ? 'suggested-value' : undefined}
-                      onInput={
+                      onFocus={
                         isNoteSuggested ? (e) => e.currentTarget.classList.remove('suggested-value') : undefined
                       }
                       onBlur={(e) => {

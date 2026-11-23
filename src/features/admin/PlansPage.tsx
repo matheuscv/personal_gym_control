@@ -26,6 +26,14 @@ export function PlansPage() {
 
   const plans = plansQuery.data ?? [];
 
+  function handleDelete(plan: { id: number; name: string }) {
+    const confirmed = window.confirm(
+      `Deseja realmente excluir o plano "${plan.name}"? Essa ação não pode ser desfeita.`
+    );
+    if (!confirmed) return;
+    deleteMutation.mutate(plan.id);
+  }
+
   return (
     <div className="admin-section plans-page">
       <span className="plans-eyebrow">Seus planos</span>
@@ -66,7 +74,7 @@ export function PlansPage() {
                 type="button"
                 className="btn-icon"
                 aria-label={`Remover ${plan.name}`}
-                onClick={() => deleteMutation.mutate(plan.id)}
+                onClick={() => handleDelete(plan)}
               >
                 <Trash2 size={15} />
               </button>

@@ -18,6 +18,14 @@ export function BodyReportPage() {
 
   const reports = reportsQuery.data ?? [];
 
+  function handleDelete(report: { id: number; measured_at: string }) {
+    const confirmed = window.confirm(
+      `Deseja realmente excluir o relatório de ${formatDate(report.measured_at)}? Essa ação não pode ser desfeita.`
+    );
+    if (!confirmed) return;
+    deleteMutation.mutate(report.id);
+  }
+
   return (
     <div className="admin-section reports-page">
       <span className="reports-eyebrow">Composição corporal</span>
@@ -72,7 +80,7 @@ export function BodyReportPage() {
                 type="button"
                 className="btn-icon"
                 aria-label={`Remover relatório de ${formatDate(report.measured_at)}`}
-                onClick={() => deleteMutation.mutate(report.id)}
+                onClick={() => handleDelete(report)}
               >
                 <Trash2 size={15} />
               </button>

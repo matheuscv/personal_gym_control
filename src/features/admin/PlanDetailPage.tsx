@@ -10,6 +10,7 @@ import {
   fetchPlanExercises,
   removePlanExercise,
   swapPlanExerciseOrder,
+  updatePlan,
   updatePlanExercise,
   upsertExerciseByName,
 } from './api';
@@ -107,6 +108,30 @@ export function PlanDetailPage() {
 
   const removeMutation = useMutation({ mutationFn: removePlanExercise, onSuccess: invalidate });
 
+  const renameMutation = useMutation({
+    mutationFn: (name: string) => updatePlan(id, { name }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-plan', id] });
+      queryClient.invalidateQueries({ queryKey: ['admin-plans'] });
+      queryClient.invalidateQueries({ queryKey: ['active-plans'] });
+      queryClient.invalidateQueries({ queryKey: ['daily-workout'] });
+    },
+  });
+
+  function handleRenamePlan(rawName: string) {
+    const name = rawName.trim();
+    if (!name || name === planQuery.data?.name) return;
+    renameMutation.mutate(name);
+  }
+
+  function handleRemoveExercise(item: { id: number; exercise_name: string }) {
+    const confirmed = window.confirm(
+      `Deseja realmente excluir "${item.exercise_name}" deste plano? Essa ação não pode ser desfeita.`
+    );
+    if (!confirmed) return;
+    removeMutation.mutate(item.id);
+  }
+
   const updateMutation = useMutation({
     mutationFn: (input: { id: number; target_sets: number | null; target_reps: string | null }) =>
       updatePlanExercise(input.id, { target_sets: input.target_sets, target_reps: input.target_reps }),
@@ -123,7 +148,15 @@ export function PlanDetailPage() {
   return (
     <div className="admin-section plan-detail-page">
       <span className="plan-detail-eyebrow">Editando plano</span>
-      <h2 className="section-title">{planQuery.data?.name ?? 'Plano'}</h2>
+      <input
+        key={planQuery.data?.name ?? ''}
+        className="plan-name-input section-title"
+        defaultValue={planQuery.data?.name ?? ''}
+        placeholder="Plano"
+        aria-label="Nome do plano"
+        disabled={!planQuery.data}
+        onBlur={(e) => handleRenamePlan(e.target.value)}
+      />
 
       {!planExercisesQuery.isLoading && items.length === 0 && (
         <p className="library-empty">Este plano ainda não tem exercícios. Adicione um na biblioteca abaixo.</p>
@@ -200,7 +233,7 @@ export function PlanDetailPage() {
                   type="button"
                   className="btn-icon"
                   aria-label={`Remover ${item.exercise_name}`}
-                  onClick={() => removeMutation.mutate(item.id)}
+                  onClick={() => handleRemoveExercise(item)}
                 >
                   <Trash2 size={14} />
                 </button>
