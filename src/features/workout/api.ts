@@ -103,7 +103,11 @@ async function findSessionForDate(dateStr: string): Promise<SessionRow | null> {
   return data && data.length > 0 ? data[0] : null;
 }
 
-async function createSession(scheduledPlanId: number, dateStr: string): Promise<SessionRow> {
+// Exportada também pra criação de treino avulso (Treino do dia, dia sem
+// plano agendado) — mesmo caminho de um dia novo normal, só que com o
+// plano escolhido na hora pelo usuário em vez do que está na agenda
+// semanal. Não toca em workout_weekly_schedule, então é só daquele dia.
+export async function createSession(scheduledPlanId: number, dateStr: string): Promise<SessionRow> {
   // Sessão criada pra uma data que já passou (ex.: primeira vez que se
   // visita um dia antigo) já nasce travada — editar o plano depois não
   // deve alterar a visão desse dia.

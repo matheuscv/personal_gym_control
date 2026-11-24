@@ -17,7 +17,9 @@ import { EmptyState } from '../../components/EmptyState';
 import { ProgressRing } from '../../components/ProgressRing';
 import {
   completeSession,
+  createSession,
   deleteSession,
+  fetchActivePlans,
   fetchLastUsedValues,
   fetchScheduledPlanForDate,
   fetchSessionForDate,
@@ -26,6 +28,7 @@ import {
   updateExerciseNote,
   updateSessionSet,
 } from './api';
+import { fetchWeeklySchedule } from '../scheduleApi';
 import { enqueuePatch, flushQueue, getQueuedCount } from './offlineQueue';
 import type { MetricType, SessionSet, SessionSetPatch } from './types';
 import { youtubeSearchUrl } from '../../lib/youtube';
@@ -149,6 +152,53 @@ export function DailyWorkoutPage() {
   });
 
   const queryClient = useQueryClient();
+
+  // Treino avulso: só pra um dia vazio (sem plano agendado), hoje ou um
+  // dia futuro navegado antecipadamente — nunca pra dia passado (histórico
+  // não faz sentido "antecipar"). Não altera workout_weekly_schedule, só
+  // cria a sessão desse dia já com o plano escolhido.
+  const canPickAdHocPlan = hasNoWorkout && dateOffset >= 0;
+  const weeklyScheduleQuery = useQuery({
+    queryKey: ['weekly-schedule'],
+    queryFn: fetchWeeklySchedule,
+    enabled: canPickAdHocPlan,
+  });
+  const activePlansQuery = useQuery({
+    queryKey: ['active-plans'],
+    queryFn: fetchActivePlans,
+    enabled: canPickAdHocPlan,
+  });
+
+  // Sugestão de 1 clique: planos já agendados pros próximos dias da
+  // semana, na ordem em que vão acontecer — reaproveita o mesmo dayLabel
+  // da navegação normal ("Amanhã", "Sexta, 28/11"...).
+  const upcomingPlanSuggestions = useMemo(() => {
+    if (!weeklyScheduleQuery.data) return [];
+    const scheduleByDayOfWeek = new Map(weeklyScheduleQuery.data.map((day) => [day.day_of_week, day]));
+    const suggestions: { dateLabel: string; planId: number; planName: string }[] = [];
+    for (let offset = 1; offset <= MAX_DAYS_FORWARD; offset++) {
+      const date = addDays(new Date(), offset);
+      const scheduled = scheduleByDayOfWeek.get(date.getDay());
+      if (!scheduled) continue;
+      suggestions.push({ dateLabel: dayLabel(offset, date), planId: scheduled.plan_id, planName: scheduled.plan_name });
+    }
+    return suggestions;
+  }, [weeklyScheduleQuery.data]);
+
+  const [otherPlanId, setOtherPlanId] = useState('');
+  const [isCreatingAdHocSession, setIsCreatingAdHocSession] = useState(false);
+
+  async function handlePickAdHocPlan(adHocPlanId: number) {
+    setIsCreatingAdHocSession(true);
+    try {
+      await createSession(adHocPlanId, dateKey);
+      await queryClient.invalidateQueries({ queryKey: ['session-for-date', dateKey] });
+      await queryClient.invalidateQueries({ queryKey: ['daily-workout', dateKey] });
+    } finally {
+      setIsCreatingAdHocSession(false);
+    }
+  }
+
   const [sets, setSets] = useState<SessionSet[]>([]);
   const [completedAt, setCompletedAt] = useState<string | null>(null);
   const [exerciseNotes, setExerciseNotes] = useState<Record<number, string>>({});
@@ -374,6 +424,62 @@ export function DailyWorkoutPage() {
           {...(!IS_ANDROID &&
             dateOffset >= 0 && { actionLabel: 'Configurar Meu Treino', actionTo: '/admin/schedule' })}
         />
+      )}
+
+      {canPickAdHocPlan && (upcomingPlanSuggestions.length > 0 || (activePlansQuery.data?.length ?? 0) > 0) && (
+        <div className="adhoc-session">
+          <span className="adhoc-session-eyebrow">Treino avulso</span>
+
+          {upcomingPlanSuggestions.length > 0 && (
+            <>
+              <p className="adhoc-hint">Antecipar um treino dos próximos dias:</p>
+              <div className="adhoc-suggestions">
+                {upcomingPlanSuggestions.map((suggestion, index) => (
+                  <button
+                    key={`${suggestion.dateLabel}-${index}`}
+                    type="button"
+                    className="adhoc-suggestion-btn"
+                    disabled={isCreatingAdHocSession}
+                    onClick={() => handlePickAdHocPlan(suggestion.planId)}
+                  >
+                    Antecipar {suggestion.dateLabel} — {suggestion.planName}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {(activePlansQuery.data?.length ?? 0) > 0 && (
+            <details className="adhoc-other-plan">
+              <summary>Ou escolher outro plano</summary>
+              <div className="adhoc-other-plan-picker">
+                <select
+                  value={otherPlanId}
+                  onChange={(e) => setOtherPlanId(e.target.value)}
+                  disabled={isCreatingAdHocSession}
+                >
+                  <option value="">Selecione um plano</option>
+                  {activePlansQuery.data?.map((plan) => (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  disabled={!otherPlanId || isCreatingAdHocSession}
+                  onClick={() => handlePickAdHocPlan(Number(otherPlanId))}
+                >
+                  Usar este plano
+                </button>
+              </div>
+            </details>
+          )}
+
+          <p className="adhoc-session-note">
+            Vale só pra {dateOffset === 0 ? 'hoje' : 'este dia'} — sua agenda semanal continua igual.
+          </p>
+        </div>
       )}
 
       {workoutQuery.isLoading && <p className="workout-status">Carregando treino do dia...</p>}
