@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { CalendarDays, ChevronDown, ClipboardList, HeartPulse, SlidersHorizontal, Target } from 'lucide-react';
+import { CalendarDays, ChevronDown, ClipboardList, HeartPulse, SlidersHorizontal, Target, Trash2 } from 'lucide-react';
 import './admin.css';
 
 interface AdminNavChild {
@@ -45,6 +45,7 @@ const ADMIN_NAV: AdminNavArea[] = [
             { to: '/admin/body-report/create', label: 'Criar Relatório' },
           ],
         },
+        { to: '/admin/trash', label: 'Lixeira', icon: Trash2, matchPrefixes: ['/admin/trash'] },
       ]),
 ];
 

@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import { supabase } from '../../lib/supabaseClient';
+import { estimateOneRepMax } from './oneRepMax';
 import type { DailyWorkout, PlanExercise, SessionSet, SessionSetPatch, WorkoutPlan } from './types';
 
 export async function fetchActivePlans(): Promise<WorkoutPlan[]> {
@@ -7,6 +8,7 @@ export async function fetchActivePlans(): Promise<WorkoutPlan[]> {
     .from('workout_plans')
     .select('id, name, is_active')
     .eq('is_active', true)
+    .is('deleted_at', null)
     .order('name');
 
   if (error) throw error;
@@ -37,6 +39,7 @@ interface PlanExerciseRow {
   order_index: number;
   target_sets: number | null;
   target_reps: string | null;
+  rest_seconds: number;
   exercise_id: number;
   exercises: { name: string; muscle_group: string | null; metric_type: 'strength' | 'cardio' } | null;
 }
@@ -45,6 +48,7 @@ export interface SessionRow {
   id: number;
   plan_id: number | null;
   completed_at: string | null;
+  canceled_at: string | null;
   locked_plan_exercises: PlanExercise[] | null;
 }
 
@@ -68,8 +72,11 @@ async function fetchPlanName(planId: number): Promise<string> {
 async function fetchLivePlanExercises(planId: number): Promise<PlanExercise[]> {
   const { data: planExerciseRows, error } = await supabase
     .from('workout_plan_exercises')
-    .select('id, order_index, target_sets, target_reps, exercise_id, exercises (name, muscle_group, metric_type)')
+    .select(
+      'id, order_index, target_sets, target_reps, rest_seconds, exercise_id, exercises (name, muscle_group, metric_type)'
+    )
     .eq('plan_id', planId)
+    .is('deleted_at', null)
     .order('order_index')
     .returns<PlanExerciseRow[]>();
   if (error) throw error;
@@ -79,6 +86,7 @@ async function fetchLivePlanExercises(planId: number): Promise<PlanExercise[]> {
     order_index: row.order_index,
     target_sets: row.target_sets,
     target_reps: row.target_reps,
+    rest_seconds: row.rest_seconds,
     exercise_id: row.exercise_id,
     exercise_name: row.exercises?.name ?? '(exercício removido)',
     muscle_group: row.exercises?.muscle_group ?? null,
@@ -94,7 +102,7 @@ async function fetchLivePlanExercises(planId: number): Promise<PlanExercise[]> {
 async function findSessionForDate(dateStr: string): Promise<SessionRow | null> {
   const { data, error } = await supabase
     .from('workout_sessions')
-    .select('id, plan_id, completed_at, locked_plan_exercises')
+    .select('id, plan_id, completed_at, canceled_at, locked_plan_exercises')
     .eq('session_date', dateStr)
     .order('id', { ascending: true })
     .limit(1)
@@ -107,19 +115,68 @@ async function findSessionForDate(dateStr: string): Promise<SessionRow | null> {
 // plano agendado) — mesmo caminho de um dia novo normal, só que com o
 // plano escolhido na hora pelo usuário em vez do que está na agenda
 // semanal. Não toca em workout_weekly_schedule, então é só daquele dia.
+//
+// Idempotente por data: se já existe uma sessão pra esse dia (cancelada,
+// por exemplo — reantecipar depois de cancelar), reaproveita a linha em
+// vez de inserir uma segunda. Sem isso, a data acabava com 2 sessões e
+// findSessionForDate (que pega a mais antiga) continuava enxergando a
+// cancelada, ignorando a nova escolha.
 export async function createSession(scheduledPlanId: number, dateStr: string): Promise<SessionRow> {
   // Sessão criada pra uma data que já passou (ex.: primeira vez que se
   // visita um dia antigo) já nasce travada — editar o plano depois não
   // deve alterar a visão desse dia.
   const lockedPlanExercises = dateStr < todayStr() ? await fetchLivePlanExercises(scheduledPlanId) : null;
 
+  const existing = await findSessionForDate(dateStr);
+  if (existing) {
+    const { data: updatedSession, error: updateError } = await supabase
+      .from('workout_sessions')
+      .update({ plan_id: scheduledPlanId, canceled_at: null, locked_plan_exercises: lockedPlanExercises })
+      .eq('id', existing.id)
+      .select('id, plan_id, completed_at, canceled_at, locked_plan_exercises')
+      .single<SessionRow>();
+    if (updateError) throw updateError;
+    return updatedSession;
+  }
+
+  // upsert (não insert puro) por segurança contra corrida com outra
+  // chamada concorrente resolvendo a mesma data ao mesmo tempo — a
+  // constraint única em (owner_id, session_date) garante que só sobra
+  // uma linha de qualquer forma, mas upsert evita até o erro de conflito.
   const { data: newSession, error: sessionInsertError } = await supabase
     .from('workout_sessions')
-    .insert({ plan_id: scheduledPlanId, session_date: dateStr, locked_plan_exercises: lockedPlanExercises })
-    .select('id, plan_id, completed_at, locked_plan_exercises')
+    .upsert(
+      { plan_id: scheduledPlanId, session_date: dateStr, locked_plan_exercises: lockedPlanExercises, canceled_at: null },
+      { onConflict: 'owner_id,session_date' }
+    )
+    .select('id, plan_id, completed_at, canceled_at, locked_plan_exercises')
     .single<SessionRow>();
   if (sessionInsertError) throw sessionInsertError;
   return newSession;
+}
+
+// Cancela o treino de uma data específica sem tocar na agenda semanal —
+// se já existe sessão pra esse dia (agendada ou avulsa), só marca
+// canceled_at nela; senão cria uma sessão só com o cancelamento, sem
+// plano. O dia volta a se comportar como "vazio" (Treino avulso disponível
+// de novo) — ver hasNoWorkout em DailyWorkoutPage.
+export async function cancelSessionForDate(dateStr: string, existingSessionId: number | null): Promise<void> {
+  if (existingSessionId != null) {
+    const { error } = await supabase
+      .from('workout_sessions')
+      .update({ canceled_at: new Date().toISOString() })
+      .eq('id', existingSessionId);
+    if (error) throw error;
+    return;
+  }
+
+  const { error } = await supabase
+    .from('workout_sessions')
+    .upsert(
+      { session_date: dateStr, canceled_at: new Date().toISOString() },
+      { onConflict: 'owner_id,session_date' }
+    );
+  if (error) throw error;
 }
 
 // knownSession, quando informado (já veio de fetchSessionForDate na
@@ -274,9 +331,13 @@ export async function loadDailyWorkout(
 }
 
 export interface LastUsedData {
-  // Chave `${exercise_id}:${set_number}` — exercise_id (não plan_exercise_id)
-  // porque é estável mesmo se o plano for reorganizado/trocado depois.
-  setValues: Map<string, SessionSetPatch>;
+  // Chave exercise_id (não plan_exercise_id, nem set_number) — o valor é
+  // sempre o da ÚLTIMA série (maior set_number) da execução mais recente
+  // desse exercício, aplicado como sugestão em TODAS as séries de hoje.
+  // A última série representa o "setup" daquela execução (mesmo
+  // princípio de fetchPreviousExerciseSetups) — não faz sentido misturar
+  // a série 1 de uma sessão com a série 2 de outra sessão diferente.
+  setValues: Map<number, SessionSetPatch>;
   notes: Record<number, string>;
 }
 
@@ -299,6 +360,7 @@ const RECENT_SESSIONS_LOOKBACK = 20;
 // de hoje também foi usado na sessão anterior.
 export async function fetchLastUsedValues(planExercises: PlanExercise[], todayStr: string): Promise<LastUsedData> {
   const planExerciseIds = planExercises.map((pe) => pe.id);
+  const exerciseIds = new Set(planExercises.map((pe) => pe.exercise_id));
 
   const { data: recentSessions, error } = await supabase
     .from('workout_sessions')
@@ -311,11 +373,17 @@ export async function fetchLastUsedValues(planExercises: PlanExercise[], todaySt
     .returns<RecentSessionRow[]>();
   if (error) throw error;
 
-  const setValues = new Map<string, SessionSetPatch>();
+  const setValues = new Map<number, SessionSetPatch>();
+  const remainingExerciseIds = new Set(exerciseIds);
   for (const session of recentSessions ?? []) {
+    if (remainingExerciseIds.size === 0) break;
+    const lastSetByExercise = new Map<number, RecentSessionRow['workout_session_sets'][number]>();
     for (const row of session.workout_session_sets ?? []) {
-      const key = `${row.exercise_id}:${row.set_number}`;
-      if (setValues.has(key)) continue;
+      if (!remainingExerciseIds.has(row.exercise_id)) continue;
+      const current = lastSetByExercise.get(row.exercise_id);
+      if (!current || row.set_number > current.set_number) lastSetByExercise.set(row.exercise_id, row);
+    }
+    for (const [exerciseId, row] of lastSetByExercise) {
       const hasData =
         row.reps != null ||
         row.weight_kg != null ||
@@ -323,8 +391,11 @@ export async function fetchLastUsedValues(planExercises: PlanExercise[], todaySt
         row.distance_km != null ||
         row.incline_degree != null ||
         row.calories != null;
+      // Sem dado nenhum nessa (a mais recente pra esse exercício) — pode
+      // ser uma série criada mas nunca preenchida; tenta uma sessão mais
+      // antiga em vez de desistir desse exercício.
       if (!hasData) continue;
-      setValues.set(key, {
+      setValues.set(exerciseId, {
         reps: row.reps,
         weight_kg: row.weight_kg,
         duration_seconds: row.duration_seconds,
@@ -332,6 +403,7 @@ export async function fetchLastUsedValues(planExercises: PlanExercise[], todaySt
         incline_degree: row.incline_degree,
         calories: row.calories,
       });
+      remainingExerciseIds.delete(exerciseId);
     }
   }
 
@@ -356,6 +428,94 @@ export async function fetchLastUsedValues(planExercises: PlanExercise[], todaySt
   }
 
   return { setValues, notes };
+}
+
+export interface ExerciseSetup {
+  reps: number | null;
+  weight_kg: number | null;
+  duration_seconds: number | null;
+}
+
+interface PreviousSetupRow {
+  exercise_id: number;
+  set_number: number;
+  reps: number | null;
+  weight_kg: number | null;
+  duration_seconds: number | null;
+}
+
+interface PreviousSetupSessionRow {
+  session_date: string;
+  workout_session_sets: PreviousSetupRow[];
+}
+
+// "Setup atual" de um exercício = reps/peso/tempo da última série (maior
+// set_number) da sessão mais recente, antes de hoje, em que ele foi feito
+// — comparado contra a última série de hoje pra detectar recorde (ver
+// isBetterSetup em DailyWorkoutPage). Mesma janela de sessões recentes de
+// fetchLastUsedValues, mesmo princípio: olha as últimas N sessões e pega
+// a primeira ocorrência de cada exercício (a mais recente).
+export async function fetchPreviousExerciseSetups(
+  exerciseIds: number[],
+  todayStr: string
+): Promise<Map<number, ExerciseSetup>> {
+  const setups = new Map<number, ExerciseSetup>();
+  if (exerciseIds.length === 0) return setups;
+
+  const { data: recentSessions, error } = await supabase
+    .from('workout_sessions')
+    .select('session_date, workout_session_sets (exercise_id, set_number, reps, weight_kg, duration_seconds)')
+    .lt('session_date', todayStr)
+    .order('session_date', { ascending: false })
+    .limit(RECENT_SESSIONS_LOOKBACK)
+    .returns<PreviousSetupSessionRow[]>();
+  if (error) throw error;
+
+  const remaining = new Set(exerciseIds);
+  for (const session of recentSessions ?? []) {
+    if (remaining.size === 0) break;
+    const lastSetByExercise = new Map<number, PreviousSetupRow>();
+    for (const row of session.workout_session_sets ?? []) {
+      if (!remaining.has(row.exercise_id)) continue;
+      const current = lastSetByExercise.get(row.exercise_id);
+      if (!current || row.set_number > current.set_number) lastSetByExercise.set(row.exercise_id, row);
+    }
+    for (const [exerciseId, row] of lastSetByExercise) {
+      setups.set(exerciseId, { reps: row.reps, weight_kg: row.weight_kg, duration_seconds: row.duration_seconds });
+      remaining.delete(exerciseId);
+    }
+  }
+  return setups;
+}
+
+interface BestSetRow {
+  exercise_id: number;
+  reps: number;
+  weight_kg: number;
+}
+
+// Maior 1RM estimado (Epley) já registrado por exercício, em qualquer
+// sessão/data — base pra detecção de PR e pra calculadora de 1RM. Só
+// olha séries de força (reps + peso preenchidos); cardio não entra.
+export async function fetchBestEstimated1RM(exerciseIds: number[]): Promise<Map<number, number>> {
+  const best = new Map<number, number>();
+  if (exerciseIds.length === 0) return best;
+
+  const { data, error } = await supabase
+    .from('workout_session_sets')
+    .select('exercise_id, reps, weight_kg')
+    .in('exercise_id', exerciseIds)
+    .eq('completed', true)
+    .not('reps', 'is', null)
+    .not('weight_kg', 'is', null)
+    .returns<BestSetRow[]>();
+  if (error) throw error;
+
+  for (const row of data ?? []) {
+    const estimate = estimateOneRepMax(row.weight_kg, row.reps);
+    if (estimate > (best.get(row.exercise_id) ?? 0)) best.set(row.exercise_id, estimate);
+  }
+  return best;
 }
 
 export async function updateSessionSet(id: number, patch: SessionSetPatch): Promise<void> {
@@ -411,6 +571,7 @@ export async function deleteSession(sessionId: number): Promise<void> {
 
 interface TodaySessionRow {
   completed_at: string | null;
+  canceled_at: string | null;
   workout_session_sets: { completed: boolean }[];
 }
 
@@ -423,11 +584,11 @@ export interface TodaySessionStatus {
 // pra checar o status do dia, sem criar uma sessão (e suas séries) à toa
 // toda vez que a Home é aberta. Busca por data (não por plan_id) pelo
 // mesmo motivo de resolveSession: a sessão já existente manda, não a
-// agenda ao vivo.
+// agenda ao vivo. Um dia cancelado conta como se não tivesse sessão.
 export async function fetchTodaySessionStatus(dateStr: string): Promise<TodaySessionStatus | null> {
   const { data, error } = await supabase
     .from('workout_sessions')
-    .select('completed_at, workout_session_sets (completed)')
+    .select('completed_at, canceled_at, workout_session_sets (completed)')
     .eq('session_date', dateStr)
     .order('id', { ascending: true })
     .limit(1)
@@ -435,35 +596,80 @@ export async function fetchTodaySessionStatus(dateStr: string): Promise<TodaySes
   if (error) throw error;
   if (!data || data.length === 0) return null;
   const row = data[0];
+  if (row.canceled_at != null) return null;
 
   const sets = row.workout_session_sets ?? [];
   const percent = sets.length === 0 ? 0 : Math.round((sets.filter((s) => s.completed).length / sets.length) * 100);
   return { completedAt: row.completed_at, percent };
 }
 
-interface MonthSessionRow {
-  session_date: string;
-  workout_session_sets: { completed: boolean }[];
+export interface MonthSessionInfo {
+  percent: number;
+  canceled: boolean;
+  hasRecord: boolean;
 }
 
-// % de séries concluídas por dia, só pras datas que já têm sessão
-// registrada (a sessão é criada sob demanda ao abrir Treino do dia) —
-// usado pelo calendário da Home.
-export async function fetchMonthSessionProgress(from: Date, to: Date): Promise<Record<string, number>> {
+interface MonthSessionRow {
+  session_date: string;
+  canceled_at: string | null;
+  workout_session_sets: { completed: boolean; is_record: boolean }[];
+}
+
+// Info por dia pra quem já tem sessão registrada (avulsa ou da agenda,
+// mesmo sem nenhuma série ainda — a sessão é criada sob demanda ao abrir
+// Treino do dia, ou na hora ao escolher um treino avulso) — usado pelo
+// calendário da Home. Dias cancelados entram marcados como tal, pra quem
+// consumir saber que não é mais um dia de treino (mesmo que a agenda
+// semanal diga o contrário). hasRecord reflete is_record já persistido
+// nas séries, sem precisar recalcular nada pra exibir o troféu do mês.
+export async function fetchMonthSessionProgress(from: Date, to: Date): Promise<Record<string, MonthSessionInfo>> {
   const { data, error } = await supabase
     .from('workout_sessions')
-    .select('session_date, workout_session_sets (completed)')
+    .select('session_date, canceled_at, workout_session_sets (completed, is_record)')
     .gte('session_date', format(from, 'yyyy-MM-dd'))
     .lte('session_date', format(to, 'yyyy-MM-dd'))
     .returns<MonthSessionRow[]>();
   if (error) throw error;
 
-  const result: Record<string, number> = {};
+  const result: Record<string, MonthSessionInfo> = {};
   for (const row of data ?? []) {
     const sets = row.workout_session_sets ?? [];
-    if (sets.length === 0) continue;
-    const done = sets.filter((s) => s.completed).length;
-    result[row.session_date] = Math.round((done / sets.length) * 100);
+    const percent = sets.length === 0 ? 0 : Math.round((sets.filter((s) => s.completed).length / sets.length) * 100);
+    result[row.session_date] = {
+      percent,
+      canceled: row.canceled_at != null,
+      hasRecord: sets.some((s) => s.is_record),
+    };
   }
   return result;
+}
+
+interface EffectivePlanRow {
+  plan_id: number | null;
+  canceled_at: string | null;
+  workout_plans: { name: string } | null;
+}
+
+// Plano "de fato" de uma data pra exibição (ex.: card da Home) — mesma
+// precedência de resolveSession: sessão já existente manda (avulsa ou
+// cancelada), só cai pra agenda semanal se a data ainda não tem sessão.
+export async function fetchEffectivePlanForDate(date: Date): Promise<{ plan_id: number; plan_name: string } | null> {
+  const dateStr = format(date, 'yyyy-MM-dd');
+  const { data, error } = await supabase
+    .from('workout_sessions')
+    .select('plan_id, canceled_at, workout_plans (name)')
+    .eq('session_date', dateStr)
+    .order('id', { ascending: true })
+    .limit(1)
+    .returns<EffectivePlanRow[]>();
+  if (error) throw error;
+
+  const session = data && data.length > 0 ? data[0] : null;
+  if (session) {
+    if (session.canceled_at != null) return null;
+    if (session.plan_id != null) {
+      return { plan_id: session.plan_id, plan_name: session.workout_plans?.name ?? 'Plano' };
+    }
+  }
+  return fetchScheduledPlanForDate(date);
 }

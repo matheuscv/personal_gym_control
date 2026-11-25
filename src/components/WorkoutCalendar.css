@@ -127,6 +127,7 @@
 }
 
 .workout-calendar-cell {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -140,6 +141,13 @@
   transition: transform 0.15s ease, filter 0.15s ease;
 }
 
+.workout-calendar-trophy-wrap {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  display: flex;
+}
+
 .workout-calendar-cell.blank {
   min-height: 0;
 }
@@ -151,11 +159,21 @@
   color: var(--text);
 }
 
+.workout-calendar-percent-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
 .workout-calendar-percent-inline {
   font-family: var(--mono);
   font-weight: 800;
   font-size: 9.5px;
   line-height: 1;
+}
+
+.workout-calendar-medal {
+  flex-shrink: 0;
 }
 
 .workout-calendar-dot {

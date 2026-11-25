@@ -93,6 +93,20 @@ h3 {
   letter-spacing: 0.04em;
 }
 
+/* Medalha motivacional (100%/90-99%/80-89% de conclusão) — mesmas 3 cores
+   reaproveitadas no calendário da Home e no detalhe do Treino do dia. */
+.medal-gold {
+  color: #d4af37;
+}
+
+.medal-silver {
+  color: #a8adb4;
+}
+
+.medal-bronze {
+  color: #b08d57;
+}
+
 h1 {
   font-size: 26px;
   font-weight: 700;

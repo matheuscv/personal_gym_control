@@ -11,6 +11,7 @@ export interface PlanExercise {
   order_index: number;
   target_sets: number | null;
   target_reps: string | null;
+  rest_seconds: number;
   exercise_id: number;
   exercise_name: string;
   muscle_group: string | null;
@@ -29,6 +30,9 @@ export interface SessionSet {
   incline_degree: number | null;
   calories: number | null;
   completed: boolean;
+  // Marca se, ao concluir a última série do exercício, reps/peso/tempo
+  // bateram o "setup" da última vez que o exercício foi feito.
+  is_record: boolean;
 }
 
 export interface DailyWorkout {
@@ -48,6 +52,13 @@ export interface DailyWorkout {
 export type SessionSetPatch = Partial<
   Pick<
     SessionSet,
-    'reps' | 'weight_kg' | 'duration_seconds' | 'distance_km' | 'incline_degree' | 'calories' | 'completed'
+    | 'reps'
+    | 'weight_kg'
+    | 'duration_seconds'
+    | 'distance_km'
+    | 'incline_degree'
+    | 'calories'
+    | 'completed'
+    | 'is_record'
   >
 >;

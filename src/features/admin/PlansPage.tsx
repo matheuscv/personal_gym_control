@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { ClipboardList, Trash2 } from 'lucide-react';
-import { deletePlan, fetchPlans, updatePlan } from './api';
+import { ClipboardList, Download, Trash2 } from 'lucide-react';
+import { deletePlan, exportAllPlans, fetchPlans, updatePlan } from './api';
 import './PlansPage.css';
 
 export function PlansPage() {
@@ -25,10 +26,27 @@ export function PlansPage() {
   });
 
   const plans = plansQuery.data ?? [];
+  const [isExporting, setIsExporting] = useState(false);
+
+  async function handleExport() {
+    setIsExporting(true);
+    try {
+      const data = await exportAllPlans();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `meus-planos-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   function handleDelete(plan: { id: number; name: string }) {
     const confirmed = window.confirm(
-      `Deseja realmente excluir o plano "${plan.name}"? Essa ação não pode ser desfeita.`
+      `Mover o plano "${plan.name}" pra lixeira? Você pode restaurar em até 30 dias, em Configuração → Lixeira.`
     );
     if (!confirmed) return;
     deleteMutation.mutate(plan.id);
@@ -42,6 +60,11 @@ export function PlansPage() {
         Planos criados em "Criar Plano" ou importados via JSON aparecem todos aqui. Desative um plano pra
         tirá-lo das sugestões sem apagar o histórico.
       </p>
+
+      <button type="button" className="btn-ghost plans-export-btn" onClick={handleExport} disabled={isExporting}>
+        <Download size={14} />
+        {isExporting ? 'Exportando...' : 'Exportar meus planos'}
+      </button>
 
       {plansQuery.isLoading && <p className="admin-status">Carregando...</p>}
 

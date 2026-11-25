@@ -4,7 +4,7 @@ import { CalendarOff, CheckCircle2, Clock, Dumbbell } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '../features/auth/auth-context';
-import { fetchActivePlans, fetchScheduledPlanForDate, fetchTodaySessionStatus } from '../features/workout/api';
+import { fetchActivePlans, fetchEffectivePlanForDate, fetchTodaySessionStatus } from '../features/workout/api';
 import { WorkoutCalendar } from '../components/WorkoutCalendar';
 import './HomePage.css';
 
@@ -39,11 +39,11 @@ export function HomePage() {
   const plansQuery = useQuery({ queryKey: ['active-plans'], queryFn: fetchActivePlans });
 
   const todayKey = format(new Date(), 'yyyy-MM-dd');
-  // Mesma queryKey usada por DailyWorkoutPage pra data de hoje — se o
-  // usuário for de Home pra Treino do dia, reaproveita o cache.
+  // Plano "de fato" de hoje — considera sessão avulsa ou cancelada, não só
+  // a agenda semanal (ver fetchEffectivePlanForDate).
   const todayScheduleQuery = useQuery({
-    queryKey: ['scheduled-plan', todayKey],
-    queryFn: () => fetchScheduledPlanForDate(new Date()),
+    queryKey: ['effective-plan', todayKey],
+    queryFn: () => fetchEffectivePlanForDate(new Date()),
   });
   const todayStatusQuery = useQuery({
     queryKey: ['today-session-status', todayKey],

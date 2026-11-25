@@ -51,6 +51,9 @@ const ImportBodyReportPage = IS_ANDROID
   : lazy(() =>
       import('./features/admin/ImportBodyReportPage').then((m) => ({ default: m.ImportBodyReportPage }))
     );
+const TrashPage = IS_ANDROID
+  ? null
+  : lazy(() => import('./features/admin/TrashPage').then((m) => ({ default: m.TrashPage })));
 
 function App() {
   return (
@@ -85,6 +88,7 @@ function App() {
                   <Route path="body-report/import" element={<ImportBodyReportPage />} />
                 </>
               )}
+              {TrashPage && <Route path="trash" element={<TrashPage />} />}
             </Route>
           </Route>
         </Route>

@@ -20,4 +20,5 @@ export interface PlanExerciseAdmin {
   order_index: number;
   target_sets: number | null;
   target_reps: string | null;
+  rest_seconds: number;
 }

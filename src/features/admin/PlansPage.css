@@ -9,6 +9,10 @@
 }
 
 .plans-page .import-hint {
+  margin-bottom: 14px;
+}
+
+.plans-export-btn {
   margin-bottom: 20px;
 }
 

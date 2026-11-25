@@ -126,7 +126,7 @@ export function PlanDetailPage() {
 
   function handleRemoveExercise(item: { id: number; exercise_name: string }) {
     const confirmed = window.confirm(
-      `Deseja realmente excluir "${item.exercise_name}" deste plano? Essa ação não pode ser desfeita.`
+      `Mover "${item.exercise_name}" pra lixeira? Você pode restaurar em até 30 dias, em Configuração → Lixeira.`
     );
     if (!confirmed) return;
     removeMutation.mutate(item.id);
@@ -140,6 +140,12 @@ export function PlanDetailPage() {
 
   const swapMutation = useMutation({
     mutationFn: (input: Parameters<typeof swapPlanExerciseOrder>) => swapPlanExerciseOrder(...input),
+    onSuccess: invalidate,
+  });
+
+  const restMutation = useMutation({
+    mutationFn: (input: { id: number; rest_seconds: number }) =>
+      updatePlanExercise(input.id, { rest_seconds: input.rest_seconds }),
     onSuccess: invalidate,
   });
 
@@ -229,6 +235,19 @@ export function PlanDetailPage() {
                     })
                   }
                 />
+                <input
+                  type="number"
+                  min={0}
+                  className="plan-exercise-rest"
+                  defaultValue={item.rest_seconds}
+                  aria-label="Descanso entre séries, em segundos"
+                  title="Descanso entre séries (s)"
+                  onBlur={(e) => {
+                    const value = e.target.value === '' ? 90 : Number(e.target.value);
+                    restMutation.mutate({ id: item.id, rest_seconds: value });
+                  }}
+                />
+                <span className="plan-exercise-rest-label">s descanso</span>
                 <button
                   type="button"
                   className="btn-icon"

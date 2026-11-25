@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Medal, Trophy } from 'lucide-react';
 import {
   addMonths,
   eachDayOfInterval,
@@ -15,6 +15,7 @@ import {
 import { ptBR } from 'date-fns/locale';
 import { fetchMonthSessionProgress } from '../features/workout/api';
 import { fetchWeeklySchedule } from '../features/scheduleApi';
+import { medalTierForPercent } from '../lib/medal';
 import { ProgressRing } from './ProgressRing';
 import './WorkoutCalendar.css';
 
@@ -26,6 +27,13 @@ function monthLabel(date: Date): string {
   const label = format(date, 'MMMM yyyy', { locale: ptBR });
   return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
 }
+
+const MEDAL_HINT: Record<'gold' | 'silver' | 'bronze', string> = {
+  gold: 'Você ganhou uma medalha de ouro',
+  silver: 'Você ganhou uma medalha de prata',
+  bronze: 'Você ganhou uma medalha de bronze',
+};
+const RECORD_HINT = 'Você obteve um novo recorde';
 
 function cellLevel(isWorkoutDay: boolean, isFutureDay: boolean, percent: number): 'none' | 'scheduled' | 'ok' | 'accent' | 'zero' {
   if (!isWorkoutDay) return 'none';
@@ -60,15 +68,28 @@ export function WorkoutCalendar() {
   );
   const leadingBlanks = startOfMonth(viewedMonth).getDay();
 
+  // Um dia só é "de treino" se a sessão dele (quando existe) não foi
+  // cancelada — e, nesse caso, nem importa o que a agenda semanal diz.
+  // Só cai pra agenda semanal quando a data ainda não tem sessão nenhuma
+  // (nem avulsa, nem cancelada) — mesma precedência de resolveSession.
+  function isWorkoutDayFor(dateKey: string, dayOfWeek: number): boolean {
+    const info = progressQuery.data?.[dateKey];
+    return info ? !info.canceled : scheduledDays.has(dayOfWeek);
+  }
+
   // Média do mês: soma o % de cada dia de treino que já passou (ou é
   // hoje) dividido pela quantidade desses dias — dias de treino ainda no
   // futuro não entram na conta, já que não têm nada "realizado" ainda.
   const { averagePercent, trackedDaysCount } = useMemo(() => {
-    const relevantDays = days.filter((d) => scheduledDays.has(d.getDay()) && !isAfter(d, today));
+    const relevantDays = days.filter((d) => {
+      const info = progressQuery.data?.[format(d, 'yyyy-MM-dd')];
+      const isWorkoutDay = info ? !info.canceled : scheduledDays.has(d.getDay());
+      return isWorkoutDay && !isAfter(d, today);
+    });
     if (relevantDays.length === 0) return { averagePercent: null as number | null, trackedDaysCount: 0 };
     const total = relevantDays.reduce((sum, d) => {
       const key = format(d, 'yyyy-MM-dd');
-      return sum + (progressQuery.data?.[key] ?? 0);
+      return sum + (progressQuery.data?.[key]?.percent ?? 0);
     }, 0);
     return { averagePercent: Math.round(total / relevantDays.length), trackedDaysCount: relevantDays.length };
   }, [days, scheduledDays, today, progressQuery.data]);
@@ -127,18 +148,36 @@ export function WorkoutCalendar() {
         ))}
         {days.map((day) => {
           const dateKey = format(day, 'yyyy-MM-dd');
-          const isWorkoutDay = scheduledDays.has(day.getDay());
+          const isWorkoutDay = isWorkoutDayFor(dateKey, day.getDay());
           const isFutureDay = isAfter(day, today);
-          const percent = progressQuery.data?.[dateKey] ?? (isWorkoutDay && !isFutureDay ? 0 : undefined);
-          const clickable = isCurrentMonth && isWorkoutDay && !isFutureDay;
+          // Dia passado (não hoje) sem nada realizado não tem nada pra
+          // ver lá — só mostra o link se houver >=1% de progresso, ou se
+          // for hoje/futuro (futuro agora também é navegável direto daqui).
+          const isPastDay = !isToday(day) && !isFutureDay;
+          const percent = progressQuery.data?.[dateKey]?.percent ?? (isWorkoutDay && !isFutureDay ? 0 : undefined);
+          const clickable = isCurrentMonth && isWorkoutDay && !(isPastDay && (percent ?? 0) === 0);
           const level = cellLevel(isWorkoutDay, isFutureDay, percent ?? 0);
           const className = `workout-calendar-cell level-${level} ${isToday(day) ? 'is-today' : ''}`;
+          const medalTier = isWorkoutDay && !isFutureDay ? medalTierForPercent(percent ?? 0) : null;
+          const hasRecord = !isFutureDay && (progressQuery.data?.[dateKey]?.hasRecord ?? false);
 
           const content = (
             <>
+              {hasRecord && (
+                <span className="workout-calendar-trophy-wrap" title={RECORD_HINT} aria-label={RECORD_HINT}>
+                  <Trophy size={10} className="workout-calendar-trophy medal-gold" />
+                </span>
+              )}
               <span className="workout-calendar-daynum">{day.getDate()}</span>
               {isWorkoutDay && !isFutureDay && (
-                <span className="workout-calendar-percent-inline">{percent ?? 0}%</span>
+                <span className="workout-calendar-percent-row">
+                  <span className="workout-calendar-percent-inline">{percent ?? 0}%</span>
+                  {medalTier && (
+                    <span title={MEDAL_HINT[medalTier]} aria-label={MEDAL_HINT[medalTier]}>
+                      <Medal size={10} className={`workout-calendar-medal medal-${medalTier}`} />
+                    </span>
+                  )}
+                </span>
               )}
               {isWorkoutDay && isFutureDay && <span className="workout-calendar-dot" />}
             </>

@@ -5,9 +5,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Flag,
+  Medal,
   PlayCircle,
   RotateCcw,
+  Star,
   Trash2,
+  Trophy,
 } from 'lucide-react';
 import { addDays, differenceInCalendarDays, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -15,12 +18,16 @@ import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { EmptyState } from '../../components/EmptyState';
 import { ProgressRing } from '../../components/ProgressRing';
+import { medalTierForPercent } from '../../lib/medal';
 import {
+  cancelSessionForDate,
   completeSession,
   createSession,
   deleteSession,
   fetchActivePlans,
+  fetchBestEstimated1RM,
   fetchLastUsedValues,
+  fetchPreviousExerciseSetups,
   fetchScheduledPlanForDate,
   fetchSessionForDate,
   loadDailyWorkout,
@@ -28,9 +35,10 @@ import {
   updateExerciseNote,
   updateSessionSet,
 } from './api';
+import { estimateOneRepMax, suggestedLoadsForOneRepMax } from './oneRepMax';
 import { fetchWeeklySchedule } from '../scheduleApi';
 import { enqueuePatch, flushQueue, getQueuedCount } from './offlineQueue';
-import type { MetricType, SessionSet, SessionSetPatch } from './types';
+import type { MetricType, PlanExercise, SessionSet, SessionSetPatch } from './types';
 import { youtubeSearchUrl } from '../../lib/youtube';
 import './DailyWorkoutPage.css';
 
@@ -80,6 +88,85 @@ function fieldsForMetricType(metricType: MetricType): SetFieldConfig[] {
   return metricType === 'cardio' ? CARDIO_FIELDS : STRENGTH_FIELDS;
 }
 
+function formatTimerClock(totalSeconds: number): string {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+interface SetupValues {
+  reps: number | null;
+  weight_kg: number | null;
+  duration_seconds: number | null;
+}
+
+// "Setup melhor" que o da última vez: reps nunca pode ter caído, e a
+// métrica relevante pro exercício precisa ter de fato aumentado — peso,
+// se for exercício de peso (tem peso no setup anterior), ou tempo, se for
+// de tempo (isométrico, sem peso no setup anterior, ex. prancha).
+function isBetterSetup(previous: SetupValues, next: SetupValues): boolean {
+  if (previous.reps != null && (next.reps == null || next.reps < previous.reps)) return false;
+
+  if (previous.weight_kg != null) {
+    return next.weight_kg != null && next.weight_kg > previous.weight_kg;
+  }
+  if (previous.duration_seconds != null) {
+    return next.duration_seconds != null && next.duration_seconds > previous.duration_seconds;
+  }
+  return false;
+}
+
+// Calculadora de 1RM por exercício — estado próprio (peso/reps digitados),
+// só se apoia no 1RM já conhecido do exercício (histórico/sessão) como
+// referência quando o usuário ainda não calculou nada na hora.
+function OneRepMaxCalculator({ bestOneRepMax }: { bestOneRepMax?: number }) {
+  const [weight, setWeight] = useState('');
+  const [reps, setReps] = useState('');
+  const typedEstimate = weight !== '' && reps !== '' ? estimateOneRepMax(Number(weight), Number(reps)) : null;
+  const reference = typedEstimate ?? bestOneRepMax ?? null;
+
+  return (
+    <details className="one-rm-calculator">
+      <summary>🧮 Calculadora de 1RM</summary>
+      <div className="one-rm-calculator-body">
+        {bestOneRepMax != null && (
+          <p className="one-rm-best">Seu 1RM estimado atual: ~{bestOneRepMax.toFixed(1)}kg</p>
+        )}
+        <div className="one-rm-inputs">
+          <input
+            type="number"
+            min={0}
+            step="0.5"
+            placeholder="Peso (kg)"
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
+          />
+          <input type="number" min={0} placeholder="Reps" value={reps} onChange={(e) => setReps(e.target.value)} />
+        </div>
+        {typedEstimate != null && <p className="one-rm-result">1RM estimado: ~{typedEstimate.toFixed(1)}kg</p>}
+        {reference != null && (
+          <table className="one-rm-table">
+            <thead>
+              <tr>
+                <th>%</th>
+                <th>Carga sugerida</th>
+              </tr>
+            </thead>
+            <tbody>
+              {suggestedLoadsForOneRepMax(reference).map((row) => (
+                <tr key={row.percentage}>
+                  <td>{row.percentage}%</td>
+                  <td>{row.weightKg}kg</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </details>
+  );
+}
+
 // A versão Android não embarca a área de Configuração (admin) — sem
 // agenda semanal pra configurar por lá, o CTA "Configurar Meu Treino"
 // não tem pra onde levar o usuário.
@@ -126,10 +213,20 @@ export function DailyWorkoutPage() {
   // terminar primeiro por sorte de rede, workoutQuery dispara cedo demais
   // sem sessão conhecida e loadDailyWorkout acaba buscando ela nesse
   // (perdendo o ganho de reaproveitar essa consulta, ver loadDailyWorkout).
+  // Sessão cancelada conta como se não tivesse plano nenhum, mesmo que a
+  // agenda semanal (ou um treino avulso anterior) diga o contrário — o dia
+  // volta a se comportar como vazio (Treino avulso disponível de novo).
+  const isSessionCanceled = dateSessionQuery.data?.canceled_at != null;
   const planId =
-    dateSessionQuery.data !== undefined ? (dateSessionQuery.data?.plan_id ?? scheduleQuery.data?.plan_id ?? null) : null;
+    dateSessionQuery.data !== undefined
+      ? isSessionCanceled
+        ? null
+        : dateSessionQuery.data?.plan_id ?? scheduleQuery.data?.plan_id ?? null
+      : null;
   const hasNoWorkout =
-    !dateSessionQuery.isLoading && !scheduleQuery.isLoading && !dateSessionQuery.data && !scheduleQuery.data;
+    !dateSessionQuery.isLoading &&
+    !scheduleQuery.isLoading &&
+    (isSessionCanceled || (!dateSessionQuery.data && !scheduleQuery.data));
 
   const workoutQuery = useQuery({
     queryKey: ['daily-workout', dateKey],
@@ -152,6 +249,15 @@ export function DailyWorkoutPage() {
   });
 
   const queryClient = useQueryClient();
+
+  // Antecipar/cancelar um dia muda o que a Home mostra pra essa data (o
+  // card "Treino do dia" e o calendário) — sem isso, a Home só pegava os
+  // dados novos num refetch por sorte (foco de janela etc.), não na hora.
+  function invalidateHomeQueries() {
+    queryClient.invalidateQueries({ queryKey: ['month-progress'] });
+    queryClient.invalidateQueries({ queryKey: ['today-session-status'] });
+    queryClient.invalidateQueries({ queryKey: ['effective-plan'] });
+  }
 
   // Treino avulso: só pra um dia vazio (sem plano agendado), hoje ou um
   // dia futuro navegado antecipadamente — nunca pra dia passado (histórico
@@ -194,8 +300,103 @@ export function DailyWorkoutPage() {
       await createSession(adHocPlanId, dateKey);
       await queryClient.invalidateQueries({ queryKey: ['session-for-date', dateKey] });
       await queryClient.invalidateQueries({ queryKey: ['daily-workout', dateKey] });
+      invalidateHomeQueries();
     } finally {
       setIsCreatingAdHocSession(false);
+    }
+  }
+
+  // Timer de descanso entre séries — só visual/local, não persiste nada.
+  // Avança sozinho via setTimeout encadeado pelo próprio estado; ao chegar
+  // a 0, vibra (se suportado) e desaparece sozinho depois de alguns segundos.
+  const [restTimer, setRestTimer] = useState<{ exerciseName: string; secondsLeft: number } | null>(null);
+
+  useEffect(() => {
+    if (!restTimer) return;
+    if (restTimer.secondsLeft <= 0) {
+      navigator.vibrate?.([200, 100, 200]);
+      const dismissId = setTimeout(() => setRestTimer(null), 3000);
+      return () => clearTimeout(dismissId);
+    }
+    const tickId = setTimeout(() => {
+      setRestTimer((prev) => (prev ? { ...prev, secondsLeft: prev.secondsLeft - 1 } : prev));
+    }, 1000);
+    return () => clearTimeout(tickId);
+  }, [restTimer]);
+
+  function startRestTimer(exerciseName: string, totalSeconds: number) {
+    if (totalSeconds <= 0) return;
+    setRestTimer({ exerciseName, secondsLeft: totalSeconds });
+  }
+
+  // Detecção de PR: 1RM estimado (Epley) de cada série concluída, comparado
+  // contra o maior já visto pro exercício — carregado 1x do histórico e
+  // mantido num estado local que já vai sendo atualizado a cada PR batido
+  // ainda dentro da mesma visita (pra a 2ª série já comparar com a 1ª).
+  const strengthExerciseIds = useMemo(
+    () =>
+      (workoutQuery.data?.planExercises ?? [])
+        .filter((pe) => pe.metric_type === 'strength')
+        .map((pe) => pe.exercise_id),
+    [workoutQuery.data?.planExercises]
+  );
+  const bestOneRmQuery = useQuery({
+    queryKey: ['best-one-rm', strengthExerciseIds.join(',')],
+    queryFn: () => fetchBestEstimated1RM(strengthExerciseIds),
+    enabled: strengthExerciseIds.length > 0,
+  });
+  const [sessionBestOneRm, setSessionBestOneRm] = useState<Map<number, number>>(new Map());
+  useEffect(() => {
+    if (bestOneRmQuery.data) setSessionBestOneRm(new Map(bestOneRmQuery.data));
+  }, [bestOneRmQuery.data]);
+
+  const [prToast, setPrToast] = useState<string | null>(null);
+  useEffect(() => {
+    if (!prToast) return;
+    const id = setTimeout(() => setPrToast(null), 5000);
+    return () => clearTimeout(id);
+  }, [prToast]);
+
+  function checkForPersonalRecord(exerciseId: number, exerciseName: string, weightKg: number, reps: number) {
+    const estimate = estimateOneRepMax(weightKg, reps);
+    const previousBest = sessionBestOneRm.get(exerciseId) ?? 0;
+    if (estimate <= previousBest) return;
+    setSessionBestOneRm((prev) => new Map(prev).set(exerciseId, estimate));
+    setPrToast(`🏆 Novo PR em ${exerciseName}: ~${estimate.toFixed(1)}kg (1RM estimado)`);
+  }
+
+  // "Setup" (reps x peso x tempo) da última vez que cada exercício foi
+  // feito — comparado contra a última série de hoje, só ao finalizar o
+  // exercício (ver isBetterSetup). Só carrega pro dia de hoje em aberto,
+  // mesmo critério de isTodayLive usado pro resto da página.
+  const previousSetupsQuery = useQuery({
+    queryKey: ['previous-setups', dateKey, strengthExerciseIds.join(',')],
+    queryFn: () => fetchPreviousExerciseSetups(strengthExerciseIds, dateKey),
+    enabled: isTodayLive && strengthExerciseIds.length > 0,
+  });
+
+  function handleToggleSetComplete(set: SessionSet, pe: PlanExercise, isLastSetOfExercise: boolean) {
+    const completing = !set.completed;
+    const patch: SessionSetPatch = { completed: completing };
+
+    if (isLastSetOfExercise && pe.metric_type === 'strength') {
+      const previousSetup = previousSetupsQuery.data?.get(pe.exercise_id);
+      patch.is_record =
+        completing &&
+        previousSetup != null &&
+        isBetterSetup(previousSetup, {
+          reps: set.reps,
+          weight_kg: set.weight_kg,
+          duration_seconds: set.duration_seconds,
+        });
+    }
+
+    persist(set.id, patch);
+    if (!completing) return;
+
+    if (!isLastSetOfExercise) startRestTimer(pe.exercise_name, pe.rest_seconds);
+    if (pe.metric_type === 'strength' && set.reps != null && set.weight_kg != null) {
+      checkForPersonalRecord(pe.exercise_id, pe.exercise_name, set.weight_kg, set.reps);
     }
   }
 
@@ -286,10 +487,33 @@ export function DailyWorkoutPage() {
     queryClient.invalidateQueries({ queryKey: ['exercise-progress'] });
   }
 
+  // Cancela o treino de um dia futuro específico — não altera a agenda
+  // semanal nem um treino avulso de outro dia, só esse dia volta a ficar
+  // vazio (e o Treino avulso passa a estar disponível nele de novo).
+  async function handleCancelDay() {
+    const confirmed = window.confirm(
+      `Cancelar o treino de ${format(targetDate, 'dd/MM/yyyy')}? Isso não altera sua agenda semanal — só este dia fica sem treino (você pode escolher outro depois, se quiser).`
+    );
+    if (!confirmed) return;
+    await cancelSessionForDate(dateKey, dateSessionQuery.data?.id ?? null);
+    await queryClient.invalidateQueries({ queryKey: ['session-for-date', dateKey] });
+    await queryClient.invalidateQueries({ queryKey: ['daily-workout', dateKey] });
+    invalidateHomeQueries();
+  }
+
   // Dia futuro (um dos 7 dias à frente de hoje) nunca é editável — não dá
   // pra preencher séries de um treino que ainda não aconteceu.
   const isFutureDay = dateOffset > 0;
   const isLocked = completedAt != null || isFutureDay;
+
+  // Calculadora de 1RM só faz sentido pra treino ainda em aberto — hoje
+  // (enquanto não concluído) ou dias futuros. Dia passado é histórico
+  // fechado, sem motivo pra recalcular nada.
+  const canUseOneRepMaxCalculator = isFutureDay || (dateOffset === 0 && completedAt == null);
+
+  // Medalha motivacional ao lado do círculo de progresso — nunca em dia
+  // futuro (sem nada realizado ainda pra premiar).
+  const progressMedalTier = isFutureDay ? null : medalTierForPercent(progressPercent);
 
   // Se o plano (ou o exercício dentro dele) for excluído depois que a
   // série já existia, plan_exercise_id vira null (on delete set null) —
@@ -335,10 +559,6 @@ export function DailyWorkoutPage() {
     }
   }
 
-  function handleToggleSetComplete(set: SessionSet) {
-    persist(set.id, { completed: !set.completed });
-  }
-
   async function persistNote(planExerciseId: number, note: string) {
     if (!workoutQuery.data) return;
     setExerciseNotes((prev) => ({ ...prev, [planExerciseId]: note }));
@@ -353,6 +573,24 @@ export function DailyWorkoutPage() {
 
   return (
     <div className="daily-workout">
+      {restTimer && (
+        <div className="rest-timer-bar">
+          <span className="rest-timer-label">
+            {restTimer.secondsLeft > 0 ? `Descanso — ${restTimer.exerciseName}` : 'Descanso concluído'}
+          </span>
+          <span className="rest-timer-countdown">
+            {restTimer.secondsLeft > 0 ? formatTimerClock(restTimer.secondsLeft) : '✓'}
+          </span>
+          {restTimer.secondsLeft > 0 && (
+            <button type="button" className="rest-timer-skip" onClick={() => setRestTimer(null)}>
+              Pular
+            </button>
+          )}
+        </div>
+      )}
+
+      {prToast && <div className="pr-toast">{prToast}</div>}
+
       <div className="workout-top">
         <div>
           <span className="workout-eyebrow">
@@ -393,13 +631,23 @@ export function DailyWorkoutPage() {
             </p>
           )}
         </div>
-        {sets.length > 0 && <ProgressRing percent={progressPercent} />}
+        {sets.length > 0 && (
+          <div className="workout-progress-wrap">
+            <ProgressRing percent={progressPercent} />
+            {progressMedalTier && <Medal size={30} className={`workout-progress-medal medal-${progressMedalTier}`} />}
+          </div>
+        )}
       </div>
 
-      {isFutureDay && workoutQuery.data && (
-        <p className="offline-banner">
-          Este treino ainda não aconteceu — os campos ficam disponíveis pra preenchimento só a partir do dia.
-        </p>
+      {isFutureDay && !hasNoWorkout && workoutQuery.data && (
+        <div className="future-day-banner">
+          <p className="offline-banner">
+            Este treino ainda não aconteceu — os campos ficam disponíveis pra preenchimento só a partir do dia.
+          </p>
+          <button type="button" className="cancel-future-day-btn" onClick={handleCancelDay}>
+            Cancelar treino deste dia
+          </button>
+        </div>
       )}
 
       {(isOffline || queuedCount > 0) && (
@@ -485,11 +733,11 @@ export function DailyWorkoutPage() {
       {workoutQuery.isLoading && <p className="workout-status">Carregando treino do dia...</p>}
       {workoutQuery.isError && <p className="workout-error">Erro ao carregar o treino.</p>}
 
-      {workoutQuery.data && workoutQuery.data.planExercises.length === 0 && (
+      {!hasNoWorkout && workoutQuery.data && workoutQuery.data.planExercises.length === 0 && (
         <p className="workout-status">Este plano ainda não tem exercícios cadastrados.</p>
       )}
 
-      {workoutQuery.data && workoutQuery.data.planExercises.length > 0 && (
+      {!hasNoWorkout && workoutQuery.data && workoutQuery.data.planExercises.length > 0 && (
         <div className="exercise-list">
           {workoutQuery.data.planExercises.map((pe) => (
             <div key={pe.id} className="exercise-card">
@@ -506,11 +754,19 @@ export function DailyWorkoutPage() {
                   <PlayCircle size={15} />
                   Vídeo
                 </a>
+                {(setsByExercise.get(pe.id) ?? []).some((s) => s.is_record) && (
+                  <Trophy
+                    size={16}
+                    className="exercise-record-icon medal-gold"
+                    aria-label="Novo recorde de reps/peso/tempo neste exercício"
+                  />
+                )}
               </div>
               {pe.target_reps && <p className="target-reps">Alvo: {pe.target_reps} reps</p>}
 
               {(() => {
                 const fields = fieldsForMetricType(pe.metric_type ?? 'strength');
+                const exerciseSets = setsByExercise.get(pe.id) ?? [];
                 return (
                   <table className="sets-table">
                     <thead>
@@ -523,9 +779,14 @@ export function DailyWorkoutPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {(setsByExercise.get(pe.id) ?? []).map((set) => {
+                      {exerciseSets.map((set, setIndex) => {
+                        const isLastSetOfExercise = setIndex === exerciseSets.length - 1;
+                        // Sempre o setup (última série) da execução mais
+                        // recente desse exercício, igual pra todas as
+                        // séries de hoje — não por número de série (ver
+                        // fetchLastUsedValues).
                         const suggestion = isTodayLive
-                          ? lastUsedQuery.data?.setValues.get(`${set.exercise_id}:${set.set_number}`)
+                          ? lastUsedQuery.data?.setValues.get(set.exercise_id)
                           : undefined;
                         // Exige que o usuário tenha clicado em cada campo (o
                         // que já persiste o valor, sugerido ou não, e troca a
@@ -537,7 +798,17 @@ export function DailyWorkoutPage() {
                         return (
                           <tr key={set.id} className={set.completed ? 'completed' : ''}>
                             <td>
-                              <span className="set-number">{set.set_number}</span>
+                              {isLastSetOfExercise ? (
+                                <span
+                                  className="set-number set-number-final"
+                                  title="Última série — fecha o setup de hoje deste exercício"
+                                >
+                                  <Star size={28} className="set-number-final-star" />
+                                  <span className="set-number-final-value">{set.set_number}</span>
+                                </span>
+                              ) : (
+                                <span className="set-number">{set.set_number}</span>
+                              )}
                             </td>
                             {fields.map((field) => {
                               const hasRealValue = set[field.key] != null;
@@ -578,7 +849,7 @@ export function DailyWorkoutPage() {
                                     ? `Preencha ${fields.map((f) => f.label).join(', ')} antes de concluir`
                                     : undefined
                                 }
-                                onClick={() => handleToggleSetComplete(set)}
+                                onClick={() => handleToggleSetComplete(set, pe, isLastSetOfExercise)}
                               >
                                 ✓
                               </button>
@@ -590,6 +861,10 @@ export function DailyWorkoutPage() {
                   </table>
                 );
               })()}
+
+              {pe.metric_type === 'strength' && canUseOneRepMaxCalculator && (
+                <OneRepMaxCalculator bestOneRepMax={sessionBestOneRm.get(pe.exercise_id)} />
+              )}
 
               {(() => {
                 const noteValue = exerciseNotes[pe.id];
@@ -618,7 +893,7 @@ export function DailyWorkoutPage() {
         </div>
       )}
 
-      {workoutQuery.data && workoutQuery.data.planExercises.length > 0 && !isFutureDay && (
+      {!hasNoWorkout && workoutQuery.data && workoutQuery.data.planExercises.length > 0 && !isFutureDay && (
         <div className="workout-complete-bar">
           {completedAt ? (
             <div className="workout-complete-status">

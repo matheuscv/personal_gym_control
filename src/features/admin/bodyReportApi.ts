@@ -33,6 +33,7 @@ export async function fetchBodyReports(): Promise<BodyReport[]> {
   const { data, error } = await supabase
     .from('body_reports')
     .select('id, measured_at, notes, body_metrics (*), body_measurements (*)')
+    .is('deleted_at', null)
     .order('measured_at', { ascending: false })
     .returns<BodyReportRow[]>();
   if (error) throw error;
@@ -84,7 +85,40 @@ export async function upsertBodyReport(input: {
   if (measurementsError) throw measurementsError;
 }
 
+// Move pra lixeira em vez de apagar de vez — ver TrashPage/trashApi.
+// body_metrics/body_measurements (FK única em report_id) nunca são
+// tocados, então reaparecem sozinhos se o relatório for restaurado.
 export async function deleteBodyReport(id: number): Promise<void> {
+  const { error } = await supabase
+    .from('body_reports')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export interface TrashedBodyReport {
+  id: number;
+  measured_at: string;
+  deleted_at: string;
+}
+
+export async function fetchTrashedBodyReports(): Promise<TrashedBodyReport[]> {
+  const { data, error } = await supabase
+    .from('body_reports')
+    .select('id, measured_at, deleted_at')
+    .not('deleted_at', 'is', null)
+    .order('deleted_at', { ascending: false })
+    .returns<TrashedBodyReport[]>();
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function restoreBodyReport(id: number): Promise<void> {
+  const { error } = await supabase.from('body_reports').update({ deleted_at: null }).eq('id', id);
+  if (error) throw error;
+}
+
+export async function hardDeleteBodyReport(id: number): Promise<void> {
   const { error } = await supabase.from('body_reports').delete().eq('id', id);
   if (error) throw error;
 }

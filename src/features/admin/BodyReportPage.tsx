@@ -20,7 +20,7 @@ export function BodyReportPage() {
 
   function handleDelete(report: { id: number; measured_at: string }) {
     const confirmed = window.confirm(
-      `Deseja realmente excluir o relatório de ${formatDate(report.measured_at)}? Essa ação não pode ser desfeita.`
+      `Mover o relatório de ${formatDate(report.measured_at)} pra lixeira? Você pode restaurar em até 30 dias, em Configuração → Lixeira.`
     );
     if (!confirmed) return;
     deleteMutation.mutate(report.id);
