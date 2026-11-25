@@ -16,7 +16,13 @@ import { BODY_METRIC_FIELDS, type BodyMetricField } from '../bodyMetricsFields';
 import { BODY_MEASUREMENT_FIELDS } from '../bodyMeasurementFields';
 import { fetchGoal } from '../goalApi';
 import { computeGoalProgress } from '../goalProgress';
-import { bodyLevelClass, classifyImc } from '../bodyClassification';
+import {
+  bodyLevelClass,
+  classifyBodyFatPct,
+  classifyImc,
+  classifySkeletalMuscleIndex,
+  muscleLevelClass,
+} from '../bodyClassification';
 import { formatShortDate } from '../../lib/date';
 import './dashboard.css';
 
@@ -154,6 +160,7 @@ const LOWER_IS_BETTER = new Set([
 ]);
 const HIGHER_IS_BETTER = new Set([
   'massa_muscular_kg',
+  'musculo_esqueletico_kg',
   'massa_ossea_kg',
   'agua_corporal_pct',
   'agua_corporal_kg',
@@ -176,9 +183,9 @@ function trendDisplay(
 }
 
 // Delta do valor mais recente contra a medição anterior, pros cards do
-// topo (Peso, IMC, Gordura subcutânea, Idade corporal, Pontuação
-// corporal) — mesma regra de favorabilidade usada nas setinhas do
-// histórico (LOWER_IS_BETTER/HIGHER_IS_BETTER).
+// topo (Peso, IMC, PGC, Massa Muscular Esquelética, Massa de Gordura,
+// TMB, Água Corporal) — mesma regra de favorabilidade usada nas setinhas
+// do histórico (LOWER_IS_BETTER/HIGHER_IS_BETTER).
 function kpiDelta(
   fieldKey: string,
   current: number | null | undefined,
@@ -197,18 +204,6 @@ function kpiDelta(
 
 function formatDelta(delta: number, decimals: number): string {
   return `${delta > 0 ? '+' : ''}${delta.toFixed(decimals)}`;
-}
-
-// Mesma regra do card Peso atual (reduzir é favorável), só que pras
-// medidas perimétricas (cm) em vez dos índices de body_metrics.
-function measurementKpiDelta(
-  current: number | null | undefined,
-  previous: number | null | undefined
-): { delta: number; cls: string } | null {
-  if (current == null || previous == null) return null;
-  const delta = current - previous;
-  const cls = delta === 0 ? 'kpi-delta-neutral' : delta < 0 ? 'kpi-delta-good' : 'kpi-delta-bad';
-  return { delta, cls };
 }
 
 // Medidas perimétricas seguem a mesma regra da Gordura corporal: reduzir é
@@ -315,24 +310,37 @@ export function BodyDashboardPage() {
   const goalProgress = computeGoalProgress(first.metrics.peso_kg ?? null, latest.metrics.peso_kg ?? null, desiredWeight);
 
   const imcLevel = latest.metrics.imc != null ? classifyImc(latest.metrics.imc) : null;
+  const pgcLevel =
+    latest.metrics.gordura_corporal_pct != null ? classifyBodyFatPct(latest.metrics.gordura_corporal_pct) : null;
+  const muscleLevel =
+    latest.metrics.smi_kg_m2 != null ? classifySkeletalMuscleIndex(latest.metrics.smi_kg_m2) : null;
+  // Mesma avaliação (faixa de referência do relatório) já usada na tabela
+  // "Análise da composição corporal" mais abaixo — não é um cálculo novo,
+  // só reaproveitada aqui no card do topo.
+  const massaGordaAvaliacao = latest.composition_analysis?.massa_gorda?.avaliacao ?? null;
 
   const pesoDelta = kpiDelta('peso_kg', latest.metrics.peso_kg, previousReport?.metrics.peso_kg);
   const imcDelta = kpiDelta('imc', latest.metrics.imc, previousReport?.metrics.imc);
-  const subcutaneaDelta = kpiDelta(
-    'gordura_subcutanea_pct',
-    latest.metrics.gordura_subcutanea_pct,
-    previousReport?.metrics.gordura_subcutanea_pct
+  const pgcDelta = kpiDelta(
+    'gordura_corporal_pct',
+    latest.metrics.gordura_corporal_pct,
+    previousReport?.metrics.gordura_corporal_pct
   );
-  const idadeDelta = kpiDelta('idade_corporal', latest.metrics.idade_corporal, previousReport?.metrics.idade_corporal);
-  const pontuacaoDelta = kpiDelta(
-    'pontuacao_corporal',
-    latest.metrics.pontuacao_corporal,
-    previousReport?.metrics.pontuacao_corporal
+  const musculoEsqueleticoDelta = kpiDelta(
+    'musculo_esqueletico_kg',
+    latest.metrics.musculo_esqueletico_kg,
+    previousReport?.metrics.musculo_esqueletico_kg
   );
-  const cinturaDelta = measurementKpiDelta(latest.measurements.cintura_cm, previousReport?.measurements.cintura_cm);
-  const abdomenDelta = measurementKpiDelta(
-    latest.measurements.abdomen_quadril_cm,
-    previousReport?.measurements.abdomen_quadril_cm
+  const massaGordaDelta = kpiDelta(
+    'massa_gorda_kg',
+    latest.metrics.massa_gorda_kg,
+    previousReport?.metrics.massa_gorda_kg
+  );
+  const tmbDelta = kpiDelta('tmb_kcal', latest.metrics.tmb_kcal, previousReport?.metrics.tmb_kcal);
+  const aguaCorporalDelta = kpiDelta(
+    'agua_corporal_kg',
+    latest.metrics.agua_corporal_kg,
+    previousReport?.metrics.agua_corporal_kg
   );
 
   const resumoRows = buildResumo(latest);
@@ -359,22 +367,33 @@ export function BodyDashboardPage() {
             {imcLevel && <span className={`kpi-badge kpi-badge-${bodyLevelClass(imcLevel)}`}>{imcLevel}</span>}
           </div>
           <div className="kpi-card">
-            <span className="kpi-label">Gordura subcutânea</span>
-            <span className="kpi-value">{latest.metrics.gordura_subcutanea_pct ?? '—'} %</span>
-            {subcutaneaDelta && (
-              <span className={`kpi-delta ${subcutaneaDelta.cls}`}>({formatDelta(subcutaneaDelta.delta, 1)} %)</span>
+            <span className="kpi-label">PGC (% de gordura corporal)</span>
+            <span className="kpi-value">{latest.metrics.gordura_corporal_pct ?? '—'} %</span>
+            {pgcDelta && <span className={`kpi-delta ${pgcDelta.cls}`}>({formatDelta(pgcDelta.delta, 1)} %)</span>}
+            {pgcLevel && <span className={`kpi-badge kpi-badge-${bodyLevelClass(pgcLevel)}`}>{pgcLevel}</span>}
+          </div>
+          <div className="kpi-card">
+            <span className="kpi-label">Massa Muscular Esquelética</span>
+            <span className="kpi-value">{latest.metrics.musculo_esqueletico_kg ?? '—'} kg</span>
+            {musculoEsqueleticoDelta && (
+              <span className={`kpi-delta ${musculoEsqueleticoDelta.cls}`}>
+                ({formatDelta(musculoEsqueleticoDelta.delta, 1)} kg)
+              </span>
+            )}
+            {muscleLevel && (
+              <span className={`kpi-badge kpi-badge-${muscleLevelClass(muscleLevel)}`}>{muscleLevel}</span>
             )}
           </div>
           <div className="kpi-card">
-            <span className="kpi-label">Idade corporal</span>
-            <span className="kpi-value">{latest.metrics.idade_corporal ?? '—'} anos</span>
-            {idadeDelta && <span className={`kpi-delta ${idadeDelta.cls}`}>({formatDelta(idadeDelta.delta, 0)} anos)</span>}
-          </div>
-          <div className="kpi-card">
-            <span className="kpi-label">Pontuação corporal</span>
-            <span className="kpi-value">{latest.metrics.pontuacao_corporal ?? '—'} pts</span>
-            {pontuacaoDelta && (
-              <span className={`kpi-delta ${pontuacaoDelta.cls}`}>({formatDelta(pontuacaoDelta.delta, 0)} pts)</span>
+            <span className="kpi-label">Massa de Gordura</span>
+            <span className="kpi-value">{latest.metrics.massa_gorda_kg ?? '—'} kg</span>
+            {massaGordaDelta && (
+              <span className={`kpi-delta ${massaGordaDelta.cls}`}>({formatDelta(massaGordaDelta.delta, 1)} kg)</span>
+            )}
+            {massaGordaAvaliacao && (
+              <span className={`kpi-badge kpi-badge-${avaliacaoClass(massaGordaAvaliacao)}`}>
+                {massaGordaAvaliacao}
+              </span>
             )}
           </div>
           <div className="kpi-card kpi-card-goal">
@@ -395,17 +414,15 @@ export function BodyDashboardPage() {
             </div>
           </div>
           <div className="kpi-card">
-            <span className="kpi-label">Cintura</span>
-            <span className="kpi-value">{latest.measurements.cintura_cm ?? '—'} cm</span>
-            {cinturaDelta && (
-              <span className={`kpi-delta ${cinturaDelta.cls}`}>({formatDelta(cinturaDelta.delta, 1)} cm)</span>
-            )}
+            <span className="kpi-label">TMB (Taxa Metabólica Basal)</span>
+            <span className="kpi-value">{latest.metrics.tmb_kcal ?? '—'} kcal</span>
+            {tmbDelta && <span className={`kpi-delta ${tmbDelta.cls}`}>({formatDelta(tmbDelta.delta, 0)} kcal)</span>}
           </div>
           <div className="kpi-card">
-            <span className="kpi-label">Abdômen/Quadril</span>
-            <span className="kpi-value">{latest.measurements.abdomen_quadril_cm ?? '—'} cm</span>
-            {abdomenDelta && (
-              <span className={`kpi-delta ${abdomenDelta.cls}`}>({formatDelta(abdomenDelta.delta, 1)} cm)</span>
+            <span className="kpi-label">Água Corporal</span>
+            <span className="kpi-value">{latest.metrics.agua_corporal_kg ?? '—'} L</span>
+            {aguaCorporalDelta && (
+              <span className={`kpi-delta ${aguaCorporalDelta.cls}`}>({formatDelta(aguaCorporalDelta.delta, 1)} L)</span>
             )}
           </div>
         </div>
