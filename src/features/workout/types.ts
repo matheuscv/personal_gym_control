@@ -35,9 +35,23 @@ export interface SessionSet {
   is_record: boolean;
 }
 
+export type WorkoutMood = 'exhausted' | 'tired' | 'good' | 'excellent';
+
+export interface WorkoutSummaryInput {
+  duration_minutes: number | null;
+  calories: number | null;
+  heart_rate_avg: number | null;
+  heart_rate_max: number | null;
+  mood: WorkoutMood | null;
+}
+
 export interface DailyWorkout {
   sessionId: number;
   completedAt: string | null;
+  // Resumo opcional capturado ao concluir o dia (ver WorkoutSummaryModal)
+  // — todos os campos nulos enquanto o dia não foi concluído ou o usuário
+  // marcou "Não informar".
+  summary: WorkoutSummaryInput;
   // Plano de fato usado nesse dia — vem da sessão já existente quando
   // houver uma (pode divergir do que está agendado hoje na semana, se a
   // agenda mudou depois), não da agenda ao vivo.

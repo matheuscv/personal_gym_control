@@ -4,7 +4,10 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Clock,
   Flag,
+  Flame,
+  HeartPulse,
   Medal,
   PlayCircle,
   RotateCcw,
@@ -19,6 +22,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { EmptyState } from '../../components/EmptyState';
 import { ProgressRing } from '../../components/ProgressRing';
 import { medalTierForPercent } from '../../lib/medal';
+import { formatWorkoutDuration, MOOD_META } from '../../lib/workoutSummary';
 import {
   cancelSessionForDate,
   completeSession,
@@ -38,7 +42,8 @@ import {
 import { estimateOneRepMax, suggestedLoadsForOneRepMax } from './oneRepMax';
 import { fetchWeeklySchedule } from '../scheduleApi';
 import { enqueuePatch, flushQueue, getQueuedCount } from './offlineQueue';
-import type { MetricType, PlanExercise, SessionSet, SessionSetPatch } from './types';
+import { WorkoutSummaryModal } from './WorkoutSummaryModal';
+import type { MetricType, PlanExercise, SessionSet, SessionSetPatch, WorkoutSummaryInput } from './types';
 import { youtubeSearchUrl } from '../../lib/youtube';
 import './DailyWorkoutPage.css';
 
@@ -92,6 +97,16 @@ function formatTimerClock(totalSeconds: number): string {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function hasAnySummaryValue(summary: WorkoutSummaryInput): boolean {
+  return (
+    summary.duration_minutes != null ||
+    summary.calories != null ||
+    summary.heart_rate_avg != null ||
+    summary.heart_rate_max != null ||
+    summary.mood != null
+  );
 }
 
 interface SetupValues {
@@ -402,6 +417,7 @@ export function DailyWorkoutPage() {
 
   const [sets, setSets] = useState<SessionSet[]>([]);
   const [completedAt, setCompletedAt] = useState<string | null>(null);
+  const [summary, setSummary] = useState<WorkoutSummaryInput | null>(null);
   const [exerciseNotes, setExerciseNotes] = useState<Record<number, string>>({});
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [queuedCount, setQueuedCount] = useState(() => getQueuedCount());
@@ -409,6 +425,7 @@ export function DailyWorkoutPage() {
   useEffect(() => {
     setSets([]);
     setCompletedAt(null);
+    setSummary(null);
     setExerciseNotes({});
   }, [dateOffset]);
 
@@ -416,6 +433,7 @@ export function DailyWorkoutPage() {
     if (workoutQuery.data) {
       setSets(workoutQuery.data.sets);
       setCompletedAt(workoutQuery.data.completedAt);
+      setSummary(workoutQuery.data.summary);
       setExerciseNotes(workoutQuery.data.exerciseNotes);
     }
   }, [workoutQuery.data]);
@@ -454,7 +472,9 @@ export function DailyWorkoutPage() {
     return Math.round((done / sets.length) * 100);
   }, [sets]);
 
-  async function handleCompleteDay() {
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
+
+  function handleCompleteDay() {
     if (!workoutQuery.data) return;
     if (progressPercent !== 100) {
       const confirmed = window.confirm(
@@ -462,9 +482,17 @@ export function DailyWorkoutPage() {
       );
       if (!confirmed) return;
     }
-    const newCompletedAt = await completeSession(workoutQuery.data.sessionId);
+    setShowSummaryModal(true);
+  }
+
+  async function handleSaveSummary(savedSummary: WorkoutSummaryInput) {
+    if (!workoutQuery.data) return;
+    const newCompletedAt = await completeSession(workoutQuery.data.sessionId, savedSummary);
     setCompletedAt(newCompletedAt);
+    setSummary(savedSummary);
+    setShowSummaryModal(false);
     queryClient.invalidateQueries({ queryKey: ['daily-workout', planId, dateKey] });
+    queryClient.invalidateQueries({ queryKey: ['workout-summaries'] });
   }
 
   async function handleReopenDay() {
@@ -923,6 +951,48 @@ export function DailyWorkoutPage() {
             </button>
           )}
         </div>
+      )}
+
+      {completedAt && summary && hasAnySummaryValue(summary) && (
+        <div className="workout-summary-recap">
+          <span className="workout-summary-recap-title">Resumo do dia</span>
+          <div className="workout-summary-recap-chips">
+            {summary.duration_minutes != null && (
+              <span className="workout-summary-chip">
+                <Clock size={13} />
+                {formatWorkoutDuration(summary.duration_minutes)}
+              </span>
+            )}
+            {summary.calories != null && (
+              <span className="workout-summary-chip">
+                <Flame size={13} />
+                {summary.calories} kcal
+              </span>
+            )}
+            {summary.heart_rate_avg != null && (
+              <span className="workout-summary-chip">
+                <HeartPulse size={13} />
+                Média {summary.heart_rate_avg} bpm
+              </span>
+            )}
+            {summary.heart_rate_max != null && (
+              <span className="workout-summary-chip">
+                <HeartPulse size={13} />
+                Máxima {summary.heart_rate_max} bpm
+              </span>
+            )}
+            {summary.mood && (
+              <span className="workout-summary-chip">
+                <span className="workout-summary-chip-emoji">{MOOD_META[summary.mood].emoji}</span>
+                {MOOD_META[summary.mood].label}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showSummaryModal && (
+        <WorkoutSummaryModal onCancel={() => setShowSummaryModal(false)} onSave={handleSaveSummary} />
       )}
     </div>
   );

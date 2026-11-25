@@ -1,7 +1,14 @@
 import { format } from 'date-fns';
 import { supabase } from '../../lib/supabaseClient';
 import { estimateOneRepMax } from './oneRepMax';
-import type { DailyWorkout, PlanExercise, SessionSet, SessionSetPatch, WorkoutPlan } from './types';
+import type {
+  DailyWorkout,
+  PlanExercise,
+  SessionSet,
+  SessionSetPatch,
+  WorkoutPlan,
+  WorkoutSummaryInput,
+} from './types';
 
 export async function fetchActivePlans(): Promise<WorkoutPlan[]> {
   const { data, error } = await supabase
@@ -50,7 +57,15 @@ export interface SessionRow {
   completed_at: string | null;
   canceled_at: string | null;
   locked_plan_exercises: PlanExercise[] | null;
+  duration_minutes: number | null;
+  calories: number | null;
+  heart_rate_avg: number | null;
+  heart_rate_max: number | null;
+  mood: WorkoutSummaryInput['mood'];
 }
+
+const SESSION_COLUMNS =
+  'id, plan_id, completed_at, canceled_at, locked_plan_exercises, duration_minutes, calories, heart_rate_avg, heart_rate_max, mood';
 
 function todayStr(): string {
   return format(new Date(), 'yyyy-MM-dd');
@@ -102,7 +117,7 @@ async function fetchLivePlanExercises(planId: number): Promise<PlanExercise[]> {
 async function findSessionForDate(dateStr: string): Promise<SessionRow | null> {
   const { data, error } = await supabase
     .from('workout_sessions')
-    .select('id, plan_id, completed_at, canceled_at, locked_plan_exercises')
+    .select(SESSION_COLUMNS)
     .eq('session_date', dateStr)
     .order('id', { ascending: true })
     .limit(1)
@@ -133,7 +148,7 @@ export async function createSession(scheduledPlanId: number, dateStr: string): P
       .from('workout_sessions')
       .update({ plan_id: scheduledPlanId, canceled_at: null, locked_plan_exercises: lockedPlanExercises })
       .eq('id', existing.id)
-      .select('id, plan_id, completed_at, canceled_at, locked_plan_exercises')
+      .select(SESSION_COLUMNS)
       .single<SessionRow>();
     if (updateError) throw updateError;
     return updatedSession;
@@ -149,7 +164,7 @@ export async function createSession(scheduledPlanId: number, dateStr: string): P
       { plan_id: scheduledPlanId, session_date: dateStr, locked_plan_exercises: lockedPlanExercises, canceled_at: null },
       { onConflict: 'owner_id,session_date' }
     )
-    .select('id, plan_id, completed_at, canceled_at, locked_plan_exercises')
+    .select(SESSION_COLUMNS)
     .single<SessionRow>();
   if (sessionInsertError) throw sessionInsertError;
   return newSession;
@@ -322,6 +337,13 @@ export async function loadDailyWorkout(
   return {
     sessionId,
     completedAt: session.completed_at,
+    summary: {
+      duration_minutes: session.duration_minutes,
+      calories: session.calories,
+      heart_rate_avg: session.heart_rate_avg,
+      heart_rate_max: session.heart_rate_max,
+      mood: session.mood,
+    },
     planId: effectivePlanId,
     planName,
     planExercises,
@@ -533,7 +555,7 @@ export async function updateExerciseNote(sessionId: number, planExerciseId: numb
   if (error) throw error;
 }
 
-export async function completeSession(sessionId: number): Promise<string> {
+export async function completeSession(sessionId: number, summary?: WorkoutSummaryInput): Promise<string> {
   const completedAt = new Date().toISOString();
 
   // Concluir trava a lista de exercícios do plano no estado de agora, se
@@ -546,7 +568,10 @@ export async function completeSession(sessionId: number): Promise<string> {
     .single<{ plan_id: number | null; locked_plan_exercises: PlanExercise[] | null }>();
   if (sessionError) throw sessionError;
 
-  const patch: { completed_at: string; locked_plan_exercises?: PlanExercise[] } = { completed_at: completedAt };
+  const patch: { completed_at: string; locked_plan_exercises?: PlanExercise[] } & Partial<WorkoutSummaryInput> = {
+    completed_at: completedAt,
+    ...summary,
+  };
   if (session.locked_plan_exercises == null && session.plan_id != null) {
     patch.locked_plan_exercises = await fetchLivePlanExercises(session.plan_id);
   }
@@ -572,12 +597,18 @@ export async function deleteSession(sessionId: number): Promise<void> {
 interface TodaySessionRow {
   completed_at: string | null;
   canceled_at: string | null;
+  duration_minutes: number | null;
+  calories: number | null;
+  heart_rate_avg: number | null;
+  heart_rate_max: number | null;
+  mood: WorkoutSummaryInput['mood'];
   workout_session_sets: { completed: boolean }[];
 }
 
 export interface TodaySessionStatus {
   completedAt: string | null;
   percent: number;
+  summary: WorkoutSummaryInput;
 }
 
 // Versão somente-leitura de resolveSession — usada pelo card da Home só
@@ -588,7 +619,9 @@ export interface TodaySessionStatus {
 export async function fetchTodaySessionStatus(dateStr: string): Promise<TodaySessionStatus | null> {
   const { data, error } = await supabase
     .from('workout_sessions')
-    .select('completed_at, canceled_at, workout_session_sets (completed)')
+    .select(
+      'completed_at, canceled_at, duration_minutes, calories, heart_rate_avg, heart_rate_max, mood, workout_session_sets (completed)'
+    )
     .eq('session_date', dateStr)
     .order('id', { ascending: true })
     .limit(1)
@@ -600,7 +633,17 @@ export async function fetchTodaySessionStatus(dateStr: string): Promise<TodaySes
 
   const sets = row.workout_session_sets ?? [];
   const percent = sets.length === 0 ? 0 : Math.round((sets.filter((s) => s.completed).length / sets.length) * 100);
-  return { completedAt: row.completed_at, percent };
+  return {
+    completedAt: row.completed_at,
+    percent,
+    summary: {
+      duration_minutes: row.duration_minutes,
+      calories: row.calories,
+      heart_rate_avg: row.heart_rate_avg,
+      heart_rate_max: row.heart_rate_max,
+      mood: row.mood,
+    },
+  };
 }
 
 export interface MonthSessionInfo {

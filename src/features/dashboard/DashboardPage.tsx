@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   CategoryScale,
   Chart as ChartJS,
+  Legend,
   LinearScale,
   LineElement,
   PointElement,
@@ -12,11 +13,19 @@ import {
 import { Line } from 'react-chartjs-2';
 import { ArrowLeft, BarChart3, Maximize2, Table2, TrendingUp } from 'lucide-react';
 import { EmptyState } from '../../components/EmptyState';
-import { fetchExerciseProgress, type ExerciseProgress, type MetricKey } from './api';
+import {
+  fetchExerciseProgress,
+  fetchWorkoutSummaries,
+  type ExerciseProgress,
+  type MetricKey,
+  type WorkoutSummaryPoint,
+} from './api';
+import type { WorkoutMood } from '../workout/types';
 import { formatShortDate } from '../../lib/date';
+import { MOOD_META } from '../../lib/workoutSummary';
 import './dashboard.css';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 const rootStyle = getComputedStyle(document.documentElement);
 const cssVar = (name: string, fallback: string) => rootStyle.getPropertyValue(name).trim() || fallback;
@@ -33,6 +42,190 @@ const METRIC_META: Record<MetricKey, { label: string; unit: string; color: strin
   incline: { label: 'Inclinação', unit: '°', color: cssVar('--metric-incline', '#199e70') },
   calories: { label: 'Calorias', unit: 'kcal', color: cssVar('--metric-calories', '#c98500') },
 };
+
+const MOOD_SCALE: Record<WorkoutMood, number> = { exhausted: 1, tired: 2, good: 3, excellent: 4 };
+const MOOD_SCALE_LABELS = ['', MOOD_META.exhausted.label, MOOD_META.tired.label, MOOD_META.good.label, MOOD_META.excellent.label];
+const heartRateAvgColor = accentColor;
+const heartRateMaxColor = cssVar('--danger', '#e5484d');
+const moodColor = cssVar('--ok', '#2fbf71');
+
+function miniLineOptions(yTitle: string, withLegend = false) {
+  return {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: { legend: { display: withLegend, labels: { color: textColor } } },
+    scales: {
+      x: { ticks: { color: textColor }, grid: { color: gridColor } },
+      y: {
+        beginAtZero: false,
+        ticks: { color: textColor },
+        grid: { color: gridColor },
+        title: { display: true, text: yTitle, color: textColor },
+      },
+    },
+  };
+}
+
+// Resumo do dia (duração/calorias/FC/sensação) é por sessão, não por
+// exercício — cada métrica só aparece se pelo menos um dia tiver aquele
+// dado preenchido (nem todo mundo informa tudo, ver WorkoutSummaryModal).
+function WorkoutWellnessCharts({ points }: { points: WorkoutSummaryPoint[] }) {
+  const durationPoints = points.filter((p) => p.duration_minutes != null);
+  const caloriesPoints = points.filter((p) => p.calories != null);
+  const heartRatePoints = points.filter((p) => p.heart_rate_avg != null || p.heart_rate_max != null);
+  const moodPoints = points.filter((p) => p.mood != null);
+
+  return (
+    <div className="dashboard-page">
+      {durationPoints.length > 0 && (
+        <div className="progress-card">
+          <div className="progress-header">
+            <h3>Duração do treino</h3>
+          </div>
+          <Line
+            data={{
+              labels: durationPoints.map((p) => formatShortDate(p.date)),
+              datasets: [
+                {
+                  label: 'Duração (min)',
+                  data: durationPoints.map((p) => p.duration_minutes),
+                  borderColor: METRIC_META.duration.color,
+                  backgroundColor: METRIC_META.duration.color,
+                  tension: 0.25,
+                },
+              ],
+            }}
+            options={miniLineOptions('Duração (min)')}
+          />
+        </div>
+      )}
+
+      {caloriesPoints.length > 0 && (
+        <div className="progress-card">
+          <div className="progress-header">
+            <h3>Calorias do treino</h3>
+          </div>
+          <Line
+            data={{
+              labels: caloriesPoints.map((p) => formatShortDate(p.date)),
+              datasets: [
+                {
+                  label: 'Calorias (kcal)',
+                  data: caloriesPoints.map((p) => p.calories),
+                  borderColor: METRIC_META.calories.color,
+                  backgroundColor: METRIC_META.calories.color,
+                  tension: 0.25,
+                },
+              ],
+            }}
+            options={miniLineOptions('Calorias (kcal)')}
+          />
+        </div>
+      )}
+
+      {heartRatePoints.length > 0 && (
+        <div className="progress-card">
+          <div className="progress-header">
+            <h3>Frequência cardíaca</h3>
+          </div>
+          <Line
+            data={{
+              labels: heartRatePoints.map((p) => formatShortDate(p.date)),
+              datasets: [
+                {
+                  label: 'Média (bpm)',
+                  data: heartRatePoints.map((p) => p.heart_rate_avg),
+                  borderColor: heartRateAvgColor,
+                  backgroundColor: heartRateAvgColor,
+                  tension: 0.25,
+                },
+                {
+                  label: 'Máxima (bpm)',
+                  data: heartRatePoints.map((p) => p.heart_rate_max),
+                  borderColor: heartRateMaxColor,
+                  backgroundColor: heartRateMaxColor,
+                  tension: 0.25,
+                },
+              ],
+            }}
+            options={miniLineOptions('bpm', true)}
+          />
+        </div>
+      )}
+
+      {moodPoints.length > 0 && (
+        <div className="progress-card">
+          <div className="progress-header">
+            <h3>Sensação ao final do treino</h3>
+          </div>
+          <Line
+            data={{
+              labels: moodPoints.map((p) => formatShortDate(p.date)),
+              datasets: [
+                {
+                  label: 'Sensação',
+                  data: moodPoints.map((p) => MOOD_SCALE[p.mood!]),
+                  borderColor: moodColor,
+                  backgroundColor: moodColor,
+                  stepped: true,
+                },
+              ],
+            }}
+            options={{
+              responsive: true,
+              maintainAspectRatio: true,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { ticks: { color: textColor }, grid: { color: gridColor } },
+                y: {
+                  min: 1,
+                  max: 4,
+                  ticks: {
+                    stepSize: 1,
+                    color: textColor,
+                    callback: (value) => MOOD_SCALE_LABELS[value as number] ?? '',
+                  },
+                  grid: { color: gridColor },
+                },
+              },
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WorkoutWellnessTable({ points }: { points: WorkoutSummaryPoint[] }) {
+  return (
+    <div className="exercise-table-wrap">
+      <table className="exercise-table">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Duração (min)</th>
+            <th>Calorias (kcal)</th>
+            <th>FC média (bpm)</th>
+            <th>FC máxima (bpm)</th>
+            <th>Sensação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {points.map((point) => (
+            <tr key={point.date}>
+              <td>{formatShortDate(point.date)}</td>
+              <td>{point.duration_minutes ?? '—'}</td>
+              <td>{point.calories ?? '—'}</td>
+              <td>{point.heart_rate_avg ?? '—'}</td>
+              <td>{point.heart_rate_max ?? '—'}</td>
+              <td>{point.mood ? MOOD_META[point.mood].label : '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 // Exercício de força (musculação) segue com Tempo em segundos (isométricos,
 // ex.: prancha); só cardio (múltiplas métricas em paralelo) usa Duração em
@@ -242,6 +435,7 @@ function ExerciseTable({ exercises }: { exercises: ExerciseProgress[] }) {
 
 export function DashboardPage() {
   const progressQuery = useQuery({ queryKey: ['exercise-progress'], queryFn: fetchExerciseProgress });
+  const summaryQuery = useQuery({ queryKey: ['workout-summaries'], queryFn: fetchWorkoutSummaries });
   const [viewMode, setViewMode] = useState<ViewMode>('chart');
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
@@ -250,7 +444,7 @@ export function DashboardPage() {
     setExpandedId(null);
   }
 
-  if (progressQuery.isLoading) {
+  if (progressQuery.isLoading || summaryQuery.isLoading) {
     return (
       <div className="dashboard-page-wrap">
         <h1>Evolução do treino</h1>
@@ -259,7 +453,11 @@ export function DashboardPage() {
     );
   }
 
-  if (!progressQuery.data || progressQuery.data.length === 0) {
+  const hasExerciseData = (progressQuery.data?.length ?? 0) > 0;
+  const summaryPoints = summaryQuery.data ?? [];
+  const hasSummaryData = summaryPoints.length > 0;
+
+  if (!hasExerciseData && !hasSummaryData) {
     return (
       <div className="dashboard-page-wrap">
         <h1>Evolução do treino</h1>
@@ -274,8 +472,10 @@ export function DashboardPage() {
     );
   }
 
-  const expandedExercise = progressQuery.data.find((exercise) => exercise.exerciseId === expandedId) ?? null;
-  const groups = groupByPlan(progressQuery.data);
+  const expandedExercise = hasExerciseData
+    ? progressQuery.data!.find((exercise) => exercise.exerciseId === expandedId) ?? null
+    : null;
+  const groups = hasExerciseData ? groupByPlan(progressQuery.data!) : [];
 
   return (
     <div className="dashboard-page-wrap">
@@ -303,6 +503,15 @@ export function DashboardPage() {
 
       {viewMode === 'table' && (
         <div className="exercise-groups">
+          {hasSummaryData && (
+            <section className="exercise-group">
+              <h2 className="exercise-group-title">
+                Bem-estar do treino
+                <span className="exercise-group-count">{summaryPoints.length}</span>
+              </h2>
+              <WorkoutWellnessTable points={summaryPoints} />
+            </section>
+          )}
           {groups.map((group) => (
             <section key={group.planName} className="exercise-group">
               <h2 className="exercise-group-title">
@@ -326,6 +535,15 @@ export function DashboardPage() {
           </div>
         ) : (
           <div className="exercise-groups">
+            {hasSummaryData && (
+              <section className="exercise-group">
+                <h2 className="exercise-group-title">
+                  Bem-estar do treino
+                  <span className="exercise-group-count">{summaryPoints.length}</span>
+                </h2>
+                <WorkoutWellnessCharts points={summaryPoints} />
+              </section>
+            )}
             {groups.map((group) => (
               <section key={group.planName} className="exercise-group">
                 <h2 className="exercise-group-title">

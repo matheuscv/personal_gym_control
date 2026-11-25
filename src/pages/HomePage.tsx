@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { CalendarOff, CheckCircle2, Clock, Dumbbell } from 'lucide-react';
+import { CalendarOff, CheckCircle2, Clock, Dumbbell, Flame, HeartPulse } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '../features/auth/auth-context';
 import { fetchActivePlans, fetchEffectivePlanForDate, fetchTodaySessionStatus } from '../features/workout/api';
 import { WorkoutCalendar } from '../components/WorkoutCalendar';
+import { formatWorkoutDuration, MOOD_META } from '../lib/workoutSummary';
 import './HomePage.css';
 
 const TIPS = [
@@ -125,6 +126,36 @@ export function HomePage() {
                   <CheckCircle2 size={13} />
                   {todayStatusQuery.data.percent}% concluído
                 </span>
+                {todayStatusQuery.data.summary.duration_minutes != null && (
+                  <span className="today-hero-stat">
+                    <Clock size={13} />
+                    {formatWorkoutDuration(todayStatusQuery.data.summary.duration_minutes)}
+                  </span>
+                )}
+                {todayStatusQuery.data.summary.calories != null && (
+                  <span className="today-hero-stat">
+                    <Flame size={13} />
+                    {todayStatusQuery.data.summary.calories} kcal
+                  </span>
+                )}
+                {todayStatusQuery.data.summary.heart_rate_avg != null && (
+                  <span className="today-hero-stat">
+                    <HeartPulse size={13} />
+                    Média {todayStatusQuery.data.summary.heart_rate_avg} bpm
+                  </span>
+                )}
+                {todayStatusQuery.data.summary.heart_rate_max != null && (
+                  <span className="today-hero-stat">
+                    <HeartPulse size={13} />
+                    Máxima {todayStatusQuery.data.summary.heart_rate_max} bpm
+                  </span>
+                )}
+                {todayStatusQuery.data.summary.mood && (
+                  <span className="today-hero-stat">
+                    {MOOD_META[todayStatusQuery.data.summary.mood].emoji}{' '}
+                    {MOOD_META[todayStatusQuery.data.summary.mood].label}
+                  </span>
+                )}
               </div>
               <p className="today-hero-message">
                 Clique <Link to="/treino">aqui</Link> para ver o resumo do seu treino.

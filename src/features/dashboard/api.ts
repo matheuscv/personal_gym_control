@@ -1,6 +1,56 @@
 import { supabase } from '../../lib/supabaseClient';
+import type { WorkoutMood } from '../workout/types';
 
 export type MetricKey = 'weight' | 'duration' | 'distance' | 'incline' | 'calories';
+
+export interface WorkoutSummaryPoint {
+  date: string;
+  duration_minutes: number | null;
+  calories: number | null;
+  heart_rate_avg: number | null;
+  heart_rate_max: number | null;
+  mood: WorkoutMood | null;
+}
+
+interface WorkoutSummaryRow {
+  session_date: string;
+  duration_minutes: number | null;
+  calories: number | null;
+  heart_rate_avg: number | null;
+  heart_rate_max: number | null;
+  mood: WorkoutMood | null;
+}
+
+// Resumo do dia (duração/calorias/FC/sensação), capturado ao concluir o
+// Treino do dia — independente de plano/exercício, por isso não faz
+// nenhum join com workout_plan_exercises, só filtra dias com algo
+// preenchido.
+export async function fetchWorkoutSummaries(): Promise<WorkoutSummaryPoint[]> {
+  const { data, error } = await supabase
+    .from('workout_sessions')
+    .select('session_date, duration_minutes, calories, heart_rate_avg, heart_rate_max, mood')
+    .order('session_date')
+    .returns<WorkoutSummaryRow[]>();
+  if (error) throw error;
+
+  return (data ?? [])
+    .filter(
+      (row) =>
+        row.duration_minutes != null ||
+        row.calories != null ||
+        row.heart_rate_avg != null ||
+        row.heart_rate_max != null ||
+        row.mood != null
+    )
+    .map((row) => ({
+      date: row.session_date,
+      duration_minutes: row.duration_minutes,
+      calories: row.calories,
+      heart_rate_avg: row.heart_rate_avg,
+      heart_rate_max: row.heart_rate_max,
+      mood: row.mood,
+    }));
+}
 
 export interface ExerciseProgressPoint {
   date: string;
