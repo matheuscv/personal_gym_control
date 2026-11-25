@@ -629,6 +629,20 @@ tr.completed .set-number-final-star {
   color: var(--bg);
 }
 
+.increase-weight-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 12.5px;
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.increase-weight-check input:disabled {
+  cursor: not-allowed;
+}
+
 .exercise-note {
   display: block;
   margin-top: 12px;

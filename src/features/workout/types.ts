@@ -33,6 +33,10 @@ export interface SessionSet {
   // Marca se, ao concluir a última série do exercício, reps/peso/tempo
   // bateram o "setup" da última vez que o exercício foi feito.
   is_record: boolean;
+  // "Aumentar peso no próximo treino" — só existe na última série do
+  // exercício; carregado pra próxima execução como parte do setup (ver
+  // loadDailyWorkout/fetchPreviousExerciseSetups), não reseta sozinho.
+  increase_weight_next: boolean;
 }
 
 export type WorkoutMood = 'exhausted' | 'tired' | 'good' | 'excellent';
@@ -74,5 +78,6 @@ export type SessionSetPatch = Partial<
     | 'calories'
     | 'completed'
     | 'is_record'
+    | 'increase_weight_next'
   >
 >;

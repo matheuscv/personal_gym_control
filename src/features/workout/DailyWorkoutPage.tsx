@@ -670,7 +670,8 @@ export function DailyWorkoutPage() {
       {isFutureDay && !hasNoWorkout && workoutQuery.data && (
         <div className="future-day-banner">
           <p className="offline-banner">
-            Este treino ainda não aconteceu — os campos ficam disponíveis pra preenchimento só a partir do dia.
+            Este treino ainda não está disponível - os campos ficarão disponíveis para preenchimento no dia agendado
+            para este treino!
           </p>
           <button type="button" className="cancel-future-day-btn" onClick={handleCancelDay}>
             Cancelar treino deste dia
@@ -893,6 +894,24 @@ export function DailyWorkoutPage() {
               {pe.metric_type === 'strength' && canUseOneRepMaxCalculator && (
                 <OneRepMaxCalculator bestOneRepMax={sessionBestOneRm.get(pe.exercise_id)} />
               )}
+
+              {pe.metric_type === 'strength' &&
+                (() => {
+                  const exerciseSets = setsByExercise.get(pe.id) ?? [];
+                  const lastSet = exerciseSets[exerciseSets.length - 1];
+                  if (!lastSet) return null;
+                  return (
+                    <label className="increase-weight-check">
+                      <input
+                        type="checkbox"
+                        checked={lastSet.increase_weight_next}
+                        disabled={isLocked}
+                        onChange={(e) => persist(lastSet.id, { increase_weight_next: e.target.checked })}
+                      />
+                      Aumentar peso no próximo treino
+                    </label>
+                  );
+                })()}
 
               {(() => {
                 const noteValue = exerciseNotes[pe.id];

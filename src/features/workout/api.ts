@@ -310,17 +310,38 @@ export async function loadDailyWorkout(
     setsByPlanExercise.set(set.plan_exercise_id, (setsByPlanExercise.get(set.plan_exercise_id) ?? 0) + 1);
   }
 
+  // "Aumentar peso no próximo treino" herdado da última execução — só
+  // quando o exercício está sendo gerado do zero nessa sessão (primeira
+  // vez que essas séries existem aqui), e só na última série gerada (é
+  // onde esse campo vive, mesmo lugar do "setup"/is_record).
+  const freshStrengthExerciseIds = isLocked
+    ? []
+    : planExercises
+        .filter((pe) => pe.metric_type === 'strength' && (setsByPlanExercise.get(pe.id) ?? 0) === 0)
+        .map((pe) => pe.exercise_id);
+  const previousSetups =
+    freshStrengthExerciseIds.length > 0
+      ? await fetchPreviousExerciseSetups(freshStrengthExerciseIds, dateStr)
+      : new Map<number, ExerciseSetup>();
+
   const missingSets = isLocked
     ? []
     : planExercises.flatMap((pe) => {
         const targetSets = pe.target_sets ?? 1;
         const existingCount = setsByPlanExercise.get(pe.id) ?? 0;
-        return Array.from({ length: Math.max(0, targetSets - existingCount) }, (_, i) => ({
-          session_id: sessionId,
-          exercise_id: pe.exercise_id,
-          plan_exercise_id: pe.id,
-          set_number: existingCount + i + 1,
-        }));
+        const countToCreate = Math.max(0, targetSets - existingCount);
+        const previousSetup = existingCount === 0 ? previousSetups.get(pe.exercise_id) : undefined;
+        return Array.from({ length: countToCreate }, (_, i) => {
+          const setNumber = existingCount + i + 1;
+          const isLastOfFreshBatch = existingCount === 0 && setNumber === countToCreate;
+          return {
+            session_id: sessionId,
+            exercise_id: pe.exercise_id,
+            plan_exercise_id: pe.id,
+            set_number: setNumber,
+            increase_weight_next: isLastOfFreshBatch && previousSetup?.increase_weight_next === true,
+          };
+        });
       });
 
   let sets = liveSets;
@@ -456,6 +477,7 @@ export interface ExerciseSetup {
   reps: number | null;
   weight_kg: number | null;
   duration_seconds: number | null;
+  increase_weight_next: boolean;
 }
 
 interface PreviousSetupRow {
@@ -464,6 +486,7 @@ interface PreviousSetupRow {
   reps: number | null;
   weight_kg: number | null;
   duration_seconds: number | null;
+  increase_weight_next: boolean;
 }
 
 interface PreviousSetupSessionRow {
@@ -486,7 +509,9 @@ export async function fetchPreviousExerciseSetups(
 
   const { data: recentSessions, error } = await supabase
     .from('workout_sessions')
-    .select('session_date, workout_session_sets (exercise_id, set_number, reps, weight_kg, duration_seconds)')
+    .select(
+      'session_date, workout_session_sets (exercise_id, set_number, reps, weight_kg, duration_seconds, increase_weight_next)'
+    )
     .lt('session_date', todayStr)
     .order('session_date', { ascending: false })
     .limit(RECENT_SESSIONS_LOOKBACK)
@@ -503,7 +528,12 @@ export async function fetchPreviousExerciseSetups(
       if (!current || row.set_number > current.set_number) lastSetByExercise.set(row.exercise_id, row);
     }
     for (const [exerciseId, row] of lastSetByExercise) {
-      setups.set(exerciseId, { reps: row.reps, weight_kg: row.weight_kg, duration_seconds: row.duration_seconds });
+      setups.set(exerciseId, {
+        reps: row.reps,
+        weight_kg: row.weight_kg,
+        duration_seconds: row.duration_seconds,
+        increase_weight_next: row.increase_weight_next,
+      });
       remaining.delete(exerciseId);
     }
   }
